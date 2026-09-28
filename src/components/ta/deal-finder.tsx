@@ -42,6 +42,7 @@ export function DealFinderView() {
   const [sort, setSort] = useState('score');
   const [page, setPage] = useState(1);
   const [saving, setSaving] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -113,7 +114,7 @@ export function DealFinderView() {
     <div className="flex flex-col gap-4 xl:flex-row">
       {/* ---------- filter sidebar ---------- */}
       <Card className="w-full shrink-0 self-start border-slate-200 p-4 shadow-sm xl:sticky xl:top-[72px] xl:w-64">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center justify-between xl:mb-3">
           <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
             <Filter className="h-3.5 w-3.5" /> Filters
             {activeFilterCount > 0 && <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{activeFilterCount}</Badge>}
@@ -123,7 +124,11 @@ export function DealFinderView() {
           </Button>
         </div>
 
-        <div className="space-y-4">
+        <Button type="button" variant="outline" size="sm" className="mt-3 w-full justify-center text-xs xl:hidden" onClick={() => setFiltersOpen((open) => !open)}>
+          {filtersOpen ? 'Hide filter controls' : 'Show filter controls'}
+        </Button>
+
+        <div className={cn('mt-4 space-y-4 xl:mt-0 xl:block', filtersOpen ? 'block' : 'hidden')}>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
             <Input placeholder="Title, brand, ASIN, store…" className="pl-8" defaultValue={filters.search} onChange={(e) => setSearch(e.target.value)} aria-label="Search leads" />
@@ -227,9 +232,9 @@ export function DealFinderView() {
               </>
             )}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <Select value={sort} onValueChange={(v) => { setSort(v); setPage(1); }}>
-              <SelectTrigger className="h-8 w-48 text-xs">
+              <SelectTrigger className="h-9 flex-1 text-xs sm:w-48 sm:flex-none">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -312,8 +317,16 @@ export function DealFinderView() {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2 lg:hidden">
+                    <div><p className="text-[10px] uppercase text-slate-400">Retail</p><p className="font-mono text-sm font-semibold">${l.retailerPrice.toFixed(2)}</p></div>
+                    <div><p className="text-[10px] uppercase text-slate-400">Buy box</p><p className="font-mono text-sm font-semibold">${l.buyBox.toFixed(2)}</p></div>
+                    <div><p className="text-[10px] uppercase text-slate-400">Profit</p><ProfitText value={l.netProfit} /></div>
+                    <div><p className="text-[10px] uppercase text-slate-400">ROI</p><RoiBadge roi={l.roiPct} /></div>
+                    <div className="col-span-2"><RiskFlagChips flags={l.riskFlags} max={4} /></div>
+                  </div>
+
                   {/* retail price */}
-                  <div className="text-right lg:text-right">
+                  <div className="hidden text-right lg:block">
                     <p className="font-mono text-sm font-semibold tabular-nums text-slate-800">${l.retailerPrice.toFixed(2)}</p>
                     {l.discountPct > 0 && (
                       <p className="font-mono text-[10px] tabular-nums text-slate-400">
@@ -332,7 +345,7 @@ export function DealFinderView() {
                   </div>
 
                   {/* roi */}
-                  <div className="text-right lg:text-right">
+                  <div className="hidden text-right lg:block">
                     <RoiBadge roi={l.roiPct} />
                   </div>
 
@@ -342,7 +355,7 @@ export function DealFinderView() {
                   </div>
 
                   {/* actions */}
-                  <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end gap-1 lg:justify-end" onClick={(e) => e.stopPropagation()}>
                     <Button
                       size="sm"
                       variant={inPipeline ? 'secondary' : 'outline'}

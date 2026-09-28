@@ -237,7 +237,7 @@ export function TAApp() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 px-3 py-4 pb-24 sm:px-4 md:p-6">
           {view === 'dashboard' && <DashboardView />}
           {view === 'deals' && <DealFinderView />}
           {view === 'scans' && <SavedScansView />}
@@ -247,11 +247,28 @@ export function TAApp() {
           {view === 'settings' && <SettingsView />}
         </main>
 
-        <footer className="mt-auto border-t border-slate-200 bg-white px-6 py-3">
+        <footer className="mt-auto hidden border-t border-slate-200 bg-white px-6 py-3 md:block">
           <p className="text-center text-[11px] text-slate-400">
             Tactical Arbitrage · demo build · scan→match→calculate→filter→act · retailer names model the production scan network, but all data is generated locally — no requests are made to these stores
           </p>
         </footer>
+
+        <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden" aria-label="Mobile navigation">
+          {NAV.slice(0, 5).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id)}
+              className={cn(
+                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-medium',
+                view === item.id ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500'
+              )}
+              aria-current={view === item.id ? 'page' : undefined}
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="max-w-full truncate">{item.label.replace('Deal ', '')}</span>
+            </button>
+          ))}
+        </nav>
       </div>
 
       {!settings.onboarded && <OnboardingWizard onDone={loadBootstrap} />}

@@ -166,14 +166,14 @@ export function SavedScansView() {
             </CardHeader>
             <CardContent className="space-y-2.5">
               <FiltersSummary f={s.filters} />
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <div className="flex flex-col gap-2 rounded-lg bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs">
                   <span className="font-bold text-emerald-700">+{s.newSinceRun}</span>
                   <span className="text-slate-500"> new since last run · </span>
                   <span className="font-semibold text-slate-700">{s.total}</span>
                   <span className="text-slate-500"> total in feed</span>
                 </div>
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => runNow(s)} disabled={running === s.id}>
+                <Button size="sm" variant="outline" className="h-8 w-full gap-1 text-[11px] sm:w-auto" onClick={() => runNow(s)} disabled={running === s.id}>
                   {running === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
                   Run now
                 </Button>
@@ -203,7 +203,7 @@ export function SavedScansView() {
               <Label className="text-xs font-semibold text-slate-600">Name</Label>
               <Input className="mt-1" placeholder="e.g. Q4 toy clearance sweep" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs font-semibold text-slate-600">Schedule</Label>
                 <Select value={schedule} onValueChange={(v) => setSchedule(v as ScanSchedule)}>

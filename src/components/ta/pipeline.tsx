@@ -136,7 +136,7 @@ export function PipelineView() {
                 </div>
               </button>
 
-              <div className="flex shrink-0 items-center gap-2 lg:ml-auto">
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 lg:ml-auto">
                 {item.owner !== 'Main' && (
                   <Badge variant="outline" className="gap-1 text-[10px] text-slate-500">
                     <UserRound className="h-3 w-3" /> {item.owner}

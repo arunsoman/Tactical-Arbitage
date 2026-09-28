@@ -118,9 +118,9 @@ export function LeadDrawer() {
           <div className="flex h-full items-center justify-center text-sm text-slate-400">Loading lead…</div>
         ) : (
           <div className="flex flex-col">
-            <SheetHeader className="space-y-0 border-b border-slate-100 p-5 pb-4 text-left">
-              <div className="flex items-start gap-3">
-                <ProductImage imageKey={l.imageUrl} title={l.title} category={l.category} className="h-16 w-16 rounded-lg text-base" />
+            <SheetHeader className="space-y-0 border-b border-slate-100 p-4 pb-4 text-left sm:p-5">
+              <div className="flex flex-wrap items-start gap-3">
+                <ProductImage imageKey={l.imageUrl} title={l.title} category={l.category} className="h-12 w-12 rounded-lg text-sm sm:h-16 sm:w-16 sm:text-base" />
                 <div className="min-w-0 flex-1">
                   <p className="text-base font-semibold leading-snug text-slate-900">{l.title}</p>
                   <SheetDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -130,7 +130,7 @@ export function LeadDrawer() {
                     <MatchBadge method={m.method} confidence={m.confidence} flagged={m.flagged} />
                   </SheetDescription>
                 </div>
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" asChild={false} onClick={() => window.open(`https://www.amazon.com/dp/${l.asin}`, '_blank')}>
+                <Button size="sm" variant="outline" className="h-8 w-full gap-1 text-[11px] sm:w-auto" asChild={false} onClick={() => window.open(`https://www.amazon.com/dp/${l.asin}`, '_blank')}>
                   <ExternalLink className="h-3 w-3" /> Amazon
                 </Button>
               </div>
@@ -159,7 +159,7 @@ export function LeadDrawer() {
               </div>
             </SheetHeader>
 
-            <div className="space-y-5 p-5">
+            <div className="space-y-5 p-3 sm:p-5">
               {/* risk flags */}
               <section>
                 <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Risk flags (FR-4.2)</h3>
@@ -201,9 +201,9 @@ export function LeadDrawer() {
                     <tbody>
                       {feeRows.map((r, i) => (
                         <tr key={r.label} className={cn('border-b border-slate-50', i % 2 === 1 && 'bg-slate-50/50')}>
-                          <td className="px-3 py-1.5 text-slate-600">
+                          <td className="px-2 py-2 text-slate-600 sm:px-3 sm:py-1.5">
                             {r.label}
-                            {r.note && <span className="ml-1.5 text-[10px] text-slate-400">{r.note}</span>}
+                            {r.note && <span className="mt-0.5 block text-[10px] text-slate-400 sm:ml-1.5 sm:inline">{r.note}</span>}
                           </td>
                           <td className="px-3 py-1.5 text-right font-mono tabular-nums text-slate-700">
                             {r.value < 0 ? '−' : ''}${Math.abs(r.value).toFixed(2)}
@@ -310,7 +310,7 @@ export function LeadDrawer() {
                     {m.flagged ? 'Flagged for review' : 'Flag bad match'}
                   </Button>
 
-                  <span className="ml-auto flex items-center gap-2 text-[11px] text-slate-400">
+                  <span className="flex w-full items-center gap-2 text-[11px] text-slate-400 sm:ml-auto sm:w-auto">
                     <FreshnessDot fresh={l.fresh} ageH={l.priceAgeH} tier={l.retailerTier} />
                     <span>· {detail.retailer.domain}</span>
                   </span>

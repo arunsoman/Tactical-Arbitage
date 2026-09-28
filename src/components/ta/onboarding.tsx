@@ -91,7 +91,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
 
   return (
     <Dialog open onOpenChange={() => undefined}>
-      <DialogContent className="sm:max-w-lg" aria-describedby="onboarding-desc">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] overflow-y-auto rounded-xl sm:max-w-lg" aria-describedby="onboarding-desc">
         <DialogHeader>
           <div className="mb-1 flex items-center gap-2 text-emerald-600">
             <Radar className="h-5 w-5" />

@@ -123,7 +123,7 @@ export function SettingsView() {
             <CardTitle className="text-sm font-bold text-slate-800">Sourcing defaults</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs font-semibold text-slate-600">Marketplace</Label>
                 <Select value={form.marketplace ?? 'US'} onValueChange={(v) => setForm((f) => ({ ...f, marketplace: v }))}>
@@ -173,7 +173,7 @@ export function SettingsView() {
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs font-semibold text-slate-600">Prep cost / unit</Label>
                 <Input className="mt-1 h-9" type="number" step="0.05" value={form.prepCost ?? ''} onChange={(e) => setForm((f) => ({ ...f, prepCost: e.target.value }))} />
