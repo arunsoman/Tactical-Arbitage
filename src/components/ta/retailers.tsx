@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { RefreshCw, Store, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, touchButtonHeight } from '@/lib/utils';
 
 const TIER_TONE: Record<string, string> = {
   A: 'bg-emerald-100 text-emerald-800',
@@ -144,7 +144,7 @@ export function RetailersView() {
                       : 'Never scanned'}
                     {r.notes ? ` · ${r.notes}` : ''}
                   </p>
-                  <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => rescan(r.id, r.name)} disabled={rescanning === r.id}>
+                  <Button size="sm" variant="outline" className={cn(touchButtonHeight, 'gap-1 text-[11px]')} onClick={() => rescan(r.id, r.name)} disabled={rescanning === r.id}>
                     {rescanning === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                     Rescan
                   </Button>

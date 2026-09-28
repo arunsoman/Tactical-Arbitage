@@ -29,7 +29,7 @@ import {
   Play,
   RefreshCw,
   Bell,
-  ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -162,22 +162,28 @@ export function TAApp() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="flex h-14 items-center gap-3 px-4 md:px-6">
-            {/* mobile nav */}
+            {/* mobile "more" overflow nav — bottom nav covers the primary 5 */}
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Radar className="h-4 w-4 text-emerald-600" /> Menu <ChevronDown className="h-3 w-3" />
+                  <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" aria-label="More options">
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {NAV.map((item) => (
+                  <DropdownMenuLabel>More</DropdownMenuLabel>
+                  {NAV.slice(5).map((item) => (
                     <DropdownMenuItem key={item.id} onClick={() => setView(item.id)}>
                       <item.icon className="mr-2 h-4 w-4" /> {item.label}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+
+            {/* mobile page title — the bottom nav's active state is easy to miss */}
+            <div className="flex min-w-0 flex-1 items-center md:hidden">
+              <span className="truncate text-sm font-semibold text-slate-800">{NAV.find((n) => n.id === view)?.label}</span>
             </div>
 
             <div className="hidden items-center gap-2 md:flex">

@@ -168,7 +168,7 @@ export function DashboardView() {
                 <ProductImage imageKey={l.imageUrl} title={l.title} category={l.category} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-800">{l.title}</p>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
                     <span>{l.retailerName}</span>
                     <span>·</span>
                     <span className="font-mono">${l.retailerPrice.toFixed(2)} → ${l.buyBox.toFixed(2)}</span>

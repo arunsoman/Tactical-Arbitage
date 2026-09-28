@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Play, Plus, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { DEFAULT_FILTERS, type LeadFilters } from '@/lib/ta/types';
+import { touchIconSize } from '@/lib/utils';
 
 function FiltersSummary({ f }: { f: LeadFilters }) {
   const parts: string[] = [];
@@ -153,12 +154,12 @@ export function SavedScansView() {
                     {s.lastRunAt && ` · last run ${new Date(s.lastRunAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 sm:gap-1.5">
                   <Switch checked={s.active} onCheckedChange={(v) => toggleActive(s, v)} aria-label={`Toggle ${s.name}`} />
-                  <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Edit scan">
+                  <Button size="icon" variant="ghost" className={touchIconSize} aria-label="Edit scan">
                     <Pencil className="h-3.5 w-3.5 text-slate-400" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => remove(s)} aria-label={`Delete ${s.name}`}>
+                  <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => remove(s)} aria-label={`Delete ${s.name}`}>
                     <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
                   </Button>
                 </div>

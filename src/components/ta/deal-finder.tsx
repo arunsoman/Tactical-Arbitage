@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ProductImage } from './product-image';
 import { RiskFlagChips, RoiBadge, ProfitText, FreshnessDot } from './badges';
 import { Search, Download, RotateCcw, ChevronLeft, ChevronRight, Star, Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, touchIconSize } from '@/lib/utils';
 
 const SORTS = [
   { id: 'score', label: 'Deal score' },
@@ -246,10 +246,10 @@ export function DealFinderView() {
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} aria-label="Previous page">
+              <Button variant="outline" size="icon" className={touchIconSize} disabled={page <= 1} onClick={() => setPage((p) => p - 1)} aria-label="Previous page">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} aria-label="Next page">
+              <Button variant="outline" size="icon" className={touchIconSize} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} aria-label="Next page">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

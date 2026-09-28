@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ProductImage } from './product-image';
 import { RiskFlagChips, ProfitText } from './badges';
 import { Download, Trash2, ChevronLeft, ChevronRight, UserRound } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, touchIconSize } from '@/lib/utils';
 
 const STATUS_TONE: Record<string, string> = {
   NEW: 'bg-slate-100 text-slate-700',
@@ -156,7 +156,7 @@ export function PipelineView() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => remove(item)} aria-label="Remove from pipeline">
+                <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => remove(item)} aria-label="Remove from pipeline">
                   <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
                 </Button>
               </div>
@@ -171,10 +171,10 @@ export function PipelineView() {
             {page * perPage + 1}–{Math.min((page + 1) * perPage, items.length)} of {items.length}
           </span>
           <div className="flex gap-1">
-            <Button variant="outline" size="icon" className="h-7 w-7" disabled={page === 0} onClick={() => setPage((p) => p - 1)} aria-label="Previous">
+            <Button variant="outline" size="icon" className={touchIconSize} disabled={page === 0} onClick={() => setPage((p) => p - 1)} aria-label="Previous">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} aria-label="Next">
+            <Button variant="outline" size="icon" className={touchIconSize} disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} aria-label="Next">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
