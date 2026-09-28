@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     "Scan 1,200+ retailers, match to Amazon, compute true net profit after every fee, and surface deals that meet your profitability filters. Scan → Match → Calculate → Filter → Act.",
   keywords: ["online arbitrage", "Amazon FBA", "sourcing", "deal finder", "profit calculator"],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/favicon.svg",
   },
   openGraph: {
     title: "Tactical Arbitrage",
