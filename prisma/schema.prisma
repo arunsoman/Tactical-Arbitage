@@ -1,0 +1,231 @@
+// Tactical Arbitrage — data model
+// Denormalized "deal store" pattern per PRD §9: Lead is the hot-path table
+// optimized for filtered user queries, rebuilt incrementally by the scan engine.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Retailer {
+  id            String    @id @default(cuid())
+  name          String
+  domain        String    @unique
+  tier          String // A (high-velocity) | B (full catalog) | C (long-tail)
+  status        String    @default("healthy") // healthy | degraded | blocked
+  cadenceHours  Int // scan cadence SLA per tier
+  lastScanAt    DateTime?
+  coverage      Float     @default(100) // % of catalog scanned within cadence SLA
+  avgFreshnessH Float     @default(2) // avg data age in hours
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  products RetailerProduct[]
+  scanJobs ScanJob[]
+}
+
+model AmazonListing {
+  id             String   @id @default(cuid())
+  asin           String   @unique
+  title          String
+  brand          String
+  category       String
+  imageUrl       String // deterministic placeholder key
+  buyBox         Float // current buy box price
+  bsr            Int
+  fbaOffers      Int
+  fbmOffers      Int
+  amazonRetail   Boolean  @default(false) // Amazon itself on the listing
+  gated          Boolean  @default(false)
+  hazmat         Boolean  @default(false)
+  meltable       Boolean  @default(false)
+  fragile        Boolean  @default(false)
+  ipClaim        Boolean  @default(false) // IP-claim history on brand
+  sizeTier       String // SMALL_STANDARD | LARGE_STANDARD | SMALL_OVERSIZE | MEDIUM_OVERSIZE
+  weightLb       Float
+  lengthIn       Float
+  widthIn        Float
+  heightIn       Float
+  referralPct    Float // resolved category referral %
+  fbaFee         Float // fulfillment fee for size tier
+  monthlyStorage Float // 30-day storage fee estimate
+  keepa30Avg     Float // avg buy box last 30d
+  keepa90Avg     Float // avg buy box last 90d
+  priceStability Float // 0..1, 1 = rock solid
+  rankTrend      String // up | down | flat
+  historyJson    String // 90-day {d,p,r} series
+  createdAt      DateTime @default(now())
+
+  matches Match[]
+}
+
+model RetailerProduct {
+  id         String   @id @default(cuid())
+  retailerId String
+  retailer   Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+  sku        String
+  title      String
+  brand      String
+  category   String
+  price      Float
+  listPrice  Float
+  couponPct  Float    @default(0) // stackable coupon % into effective price
+  imageUrl   String
+  upc        String // GTIN — primary matching key
+  packCount  Int      @default(1)
+  unitSize   String? // "12oz", "60ct"
+  inStock    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  match Match?
+}
+
+model Match {
+  id                String          @id @default(cuid())
+  retailerProductId String          @unique
+  retailerProduct   RetailerProduct @relation(fields: [retailerProductId], references: [id], onDelete: Cascade)
+  listingId         String
+  listing           AmazonListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  method            String // GTIN (exact) | FUZZY
+  confidence        Float // 0..1 calibrated confidence
+  status            String // AUTO_ACCEPTED | REVIEW | REJECTED
+  flagged           Boolean         @default(false) // user flagged bad match
+  flagNote          String?
+  createdAt         DateTime        @default(now())
+
+  lead Lead?
+}
+
+// Denormalized deal store — every filtered user query hits this table.
+model Lead {
+  id                 String  @id @default(cuid())
+  matchId            String  @unique
+  match              Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  retailerProductId  String
+  listingId          String
+  // snapshot fields (denormalized for filter performance)
+  retailerId         String
+  retailerName       String
+  retailerTier       String
+  asin               String
+  title              String
+  brand              String
+  category           String
+  imageUrl           String
+  // economics snapshot
+  retailerPrice      Float
+  listPrice          Float
+  couponPct          Float
+  retailerShipping   Float
+  buyBox             Float
+  referralFee        Float
+  fbaFee             Float
+  storageFee         Float
+  inboundFee         Float
+  prepFee            Float
+  taxFee             Float
+  taxRate            Float
+  totalCost          Float // fully landed cost per unit
+  netProfit          Float
+  roiPct             Float
+  marginPct          Float
+  breakeven          Float // min buy box to hit user's min ROI
+  discountPct        Float // effective discount vs list
+  // marketplace snapshot
+  bsr                Int
+  fbaOffers          Int
+  fbmOffers          Int
+  sizeTier           String
+  amazonRetail       Boolean @default(false)
+  riskFlags          String // JSON string[]
+  score              Float // platform deal score 0..100
+  // freshness
+  priceAgeH          Float
+  fresh              Boolean
+  firstSeenAt        DateTime @default(now())
+  lastVerifiedAt     DateTime
+
+  pipeline PipelineItem?
+
+  @@index([category])
+  @@index([roiPct])
+  @@index([netProfit])
+  @@index([bsr])
+  @@index([fresh])
+}
+
+model PipelineItem {
+  id        String   @id @default(cuid())
+  leadId    String   @unique
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status    String // NEW | INTERESTED | PURCHASED | SHIPPED | LIVE | WON | LOST
+  notes     String?
+  tags      String   @default("[]") // JSON string[]
+  qty       Int      @default(1)
+  owner     String   @default("Main") // main user or VA sub-account
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+model ScanSet {
+  id          String    @id @default(cuid())
+  name        String
+  schedule    String    @default("daily") // every_2h | every_12h | daily | weekly | manual
+  filtersJson String // LeadFilters JSON
+  active      Boolean   @default(true)
+  isDefault   Boolean   @default(false)
+  lastRunAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model ScanJob {
+  id           String    @id @default(cuid())
+  retailerId   String
+  retailer     Retailer  @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+  scanSetId    String?
+  status       String    @default("QUEUED") // QUEUED | RUNNING | DONE | FAILED
+  pagesCrawled Int       @default(0)
+  skusProcessed Int      @default(0)
+  newLeads     Int       @default(0)
+  priceUpdates Int       @default(0)
+  errors       Int       @default(0)
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+}
+
+model Settings {
+  id                 String   @id @default("singleton")
+  onboarded          Boolean  @default(false)
+  marketplace        String   @default("US") // US | UK | CA | DE
+  plan               String   @default("PRO") // STARTER | PRO | EXPERT
+  trialEndsAt        DateTime?
+  sourcingState      String   @default("MT") // resale-certificate (tax-free) state
+  taxRate            Float    @default(0) // 0 = tax-free sourcing
+  minRoi             Float    @default(30)
+  minProfit          Float    @default(5)
+  maxBsr             Int      @default(150000)
+  minOffers          Int      @default(0)
+  excludeAmazonRetail Boolean @default(true)
+  prepCost           Float    @default(0.5)
+  inboundCost        Float    @default(0.45)
+  monthlyBudget      Float    @default(2000)
+  excludedBrands     String   @default("[]")
+  excludedAsins      String   @default("[]")
+  updatedAt          DateTime @updatedAt
+}
+
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  type      String // SCAN | DIGEST | PIPELINE | MATCH | SYSTEM | PRICE_DROP
+  message   String
+  metaJson  String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
