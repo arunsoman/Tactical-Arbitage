@@ -39,6 +39,15 @@ export const SCHEDULE_LABELS: Record<ScanSchedule, string> = {
   manual: 'Manual only',
 };
 
+/** Hours between automatic runs (null = never runs on its own). */
+export const SCHEDULE_HOURS: Record<ScanSchedule, number | null> = {
+  every_2h: 2,
+  every_12h: 12,
+  daily: 24,
+  weekly: 168,
+  manual: null,
+};
+
 // ---------- Lead filters (PRD FR-4.1 / FR-4.4) ----------
 
 export interface LeadFilters {
@@ -204,6 +213,11 @@ export const RISK_FLAG_META: Record<RiskFlag, { label: string; desc: string; sev
   FRAGILE: { label: 'Fragile', desc: 'Breakage risk — add prep cost and expect damage returns.', severity: 'low' },
   LOW_OFFERS: { label: 'Low offers', desc: 'Fewer than 3 sellers on listing — verify demand before buying.', severity: 'low' },
 };
+
+/** Flags worth warning about when a lead is pursued (high + medium severity). */
+export function warningFlags(flags: string[]): RiskFlag[] {
+  return flags.filter((f): f is RiskFlag => f in RISK_FLAG_META && RISK_FLAG_META[f as RiskFlag].severity !== 'low');
+}
 
 export function parseJsonArray(s: string | null | undefined): string[] {
   if (!s) return [];

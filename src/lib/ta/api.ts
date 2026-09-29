@@ -1,6 +1,9 @@
 // Typed API client + shared row types for the TA frontend
 
 import type { LeadFilters, PlanSpec, RiskFlag, ScanSchedule } from './types';
+import type { LeadScanRef } from './scanAttribution';
+
+export type { LeadScanRef };
 
 export interface SettingsDTO {
   id: string;
@@ -60,6 +63,7 @@ export interface LeadRow {
   fresh: boolean;
   firstSeenAt: string;
   pipeline?: { id: string; status: string } | null;
+  scans?: LeadScanRef[];
 }
 
 export interface LeadsResponse {
@@ -71,6 +75,8 @@ export interface LeadsResponse {
 }
 
 export interface LeadDetailDTO {
+  buyUrl?: string;
+  scans?: LeadScanRef[];
   lead: LeadRow & { riskFlagList: RiskFlag[]; referralFee: number; fbaFee: number; storageFee: number; inboundFee: number; prepFee: number; taxFee: number; totalCost: number; retailerShipping: number; taxRate: number; lastVerifiedAt: string };
   match: { method: string; confidence: number; status: string; flagged: boolean; flagNote: string | null; packCount: number; unitSize: string; upc: string; sku: string };
   listing: {
@@ -110,6 +116,7 @@ export interface ScanSetDTO {
   active: boolean;
   isDefault: boolean;
   lastRunAt: string | null;
+  lastRunStartedAt: string | null;
   filters: LeadFilters;
   newSinceRun: number;
   total: number;
@@ -147,6 +154,7 @@ export interface DashboardDTO {
     score: number;
     riskFlags: string;
     imageUrl: string;
+    scans?: LeadScanRef[];
   }[];
   plan: string;
 }
@@ -176,6 +184,13 @@ export interface PipelineItemDTO {
   tags: string;
   qty: number;
   owner: string;
+  buyUrl?: string | null;
+  unitCost: number | null;
+  orderNumber: string | null;
+  realizedProfit: number | null;
+  expectedProfit: number | null;
+  expectedRoi: number | null;
+  buyPrice: number | null;
   createdAt: string;
   updatedAt: string;
   lead: {
@@ -190,6 +205,7 @@ export interface PipelineItemDTO {
     buyBox: number;
     netProfit: number;
     roiPct: number;
+    scans?: LeadScanRef[];
     bsr: number;
     riskFlags: string;
     score: number;
@@ -214,8 +230,9 @@ async function handle<T>(res: Response): Promise<T> {
 export const api = {
   bootstrap: () => fetch('/api/bootstrap').then((r) => handle<BootstrapDTO>(r)),
 
-  leads: (filters: LeadFilters, sort: string, page: number, pageSize: number) => {
+  leads: (filters: LeadFilters, sort: string, page: number, pageSize: number, since?: string | null) => {
     const params = new URLSearchParams({ filters: JSON.stringify(filters), sort, page: String(page), pageSize: String(pageSize) });
+    if (since) params.set('since', since);
     return fetch(`/api/leads?${params}`).then((r) => handle<LeadsResponse>(r));
   },
 
@@ -248,7 +265,7 @@ export const api = {
   pipeline: () => fetch('/api/pipeline').then((r) => handle<{ items: PipelineItemDTO[] }>(r)),
 
   saveToPipeline: (leadId: string) =>
-    fetch('/api/pipeline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId }) }).then((r) => handle<{ ok: boolean; existed: boolean; item: PipelineItemDTO }>(r)),
+    fetch('/api/pipeline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId }) }).then((r) => handle<{ ok: boolean; existed: boolean; item: PipelineItemDTO; warnings?: string[] }>(r)),
 
   updatePipeline: (id: string, body: Record<string, unknown>) =>
     fetch(`/api/pipeline/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => handle<{ ok: boolean }>(r)),

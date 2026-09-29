@@ -166,6 +166,19 @@ enforced at the API layer per FR-9.2.
 
 Annual billing = 2 months free. *Fair-use scan scheduling applies.
 
+## Demo walkthrough (how a seller uses it)
+
+1. **Saved Scans** — each card shows *+N new since last run*. Click **Show results** to open Deal Finder scoped to that scan
+   (toggle *New from last run* / *All matching*, tweak filters, **Save filters to scan**). **Run now** — or wait: active scans
+   auto-run on their schedule while the app is open.
+2. **Deal Finder / lead drawer** — every product shows chips for the scan that found it (green) and other scans it matches (blue).
+   Click **Save** to send it to the pipeline (risky flags trigger a warning; the expected profit is snapshotted).
+3. **Buy** — the app doesn't check out for you. Use **Buy at {retailer}** (lead drawer or pipeline card) to find the item on the
+   retailer's site, buy it there, then click **Record purchase** in the Pipeline (units, unit cost, order number).
+4. **Track** — move items Shipped → Live → Won/Lost by hand; enter **Actual $** on Won/Lost cards to see realized profit.
+
+> On Vercel the demo DB is copied to `/tmp` per instance, so changes reset on a cold start.
+
 ## Demo constraints (read me)
 
 This build is a **self-contained product implementation against the fictional

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { sanitizeFilters } from '@/lib/ta/types';
 import { PLANS } from '@/lib/ta/types';
+import { buildLeadWhere, postFilterRiskFlags } from '@/lib/ta/filters';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,22 +15,21 @@ export async function GET() {
   const withCounts = await Promise.all(
     scans.map(async (s) => {
       const filters = sanitizeFilters(JSON.parse(s.filtersJson || '{}'));
-      const since = s.lastRunAt ?? new Date(Date.now() - 7 * 864e5);
-      const sinceFilter: Record<string, unknown> = { firstSeenAt: { gte: since } };
-      if (filters.categories.length > 0) sinceFilter.category = { in: filters.categories };
-      if (filters.minRoi != null) sinceFilter.roiPct = { gte: filters.minRoi };
-      if (filters.minProfit != null) sinceFilter.netProfit = { gte: filters.minProfit };
-      const newSinceRun = await db.lead.count({ where: sinceFilter });
-      const totalFilter: Record<string, unknown> = {};
-      if (filters.categories.length > 0) totalFilter.category = { in: filters.categories };
-      if (filters.minRoi != null) totalFilter.roiPct = { gte: filters.minRoi };
-      const total = await db.lead.count({ where: totalFilter });
+      const since = s.lastRunStartedAt ?? s.lastRunAt ?? new Date(Date.now() - 7 * 864e5);
+      // same query Deal Finder runs, so "total in feed" always matches "View results"
+      const where = buildLeadWhere(filters, settings);
+      const [totalRows, newRows] = await Promise.all([
+        db.lead.findMany({ where, select: { riskFlags: true } }),
+        db.lead.findMany({ where: { AND: [where, { firstSeenAt: { gte: since } }] }, select: { riskFlags: true } }),
+      ]);
+      const total = postFilterRiskFlags(totalRows, filters.excludeFlags).length;
+      const newSinceRun = postFilterRiskFlags(newRows, filters.excludeFlags).length;
       return {
         ...s,
         filters,
         newSinceRun,
         total,
-        activeJobs: 0,
+        activeJobs: await db.scanJob.count({ where: { scanSetId: s.id, status: 'RUNNING' } }),
       };
     })
   );

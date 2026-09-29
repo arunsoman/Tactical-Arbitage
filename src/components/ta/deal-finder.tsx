@@ -17,8 +17,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProductImage } from './product-image';
-import { RiskFlagChips, RoiBadge, ProfitText, FreshnessDot } from './badges';
-import { Search, Download, RotateCcw, ChevronLeft, ChevronRight, Star, Filter } from 'lucide-react';
+import { RiskFlagChips, RoiBadge, ProfitText, FreshnessDot, ScanChips } from './badges';
+import { Search, Download, RotateCcw, ChevronLeft, ChevronRight, Star, Filter, Radar, X, Save } from 'lucide-react';
 import { cn, touchIconSize } from '@/lib/utils';
 
 const SORTS = [
@@ -34,7 +34,7 @@ const SORTS = [
 const FLAG_KEYS = Object.keys(RISK_FLAG_META) as RiskFlag[];
 
 export function DealFinderView() {
-  const { filters, setFilters, resetFilters, openLead, bootstrap, dealRefreshKey } = useTAStore();
+  const { filters, setFilters, resetFilters, openLead, bootstrap, dealRefreshKey, activeScan, newOnly, setNewOnly, clearScan } = useTAStore();
   const { toast } = useToast();
 
   const [data, setData] = useState<LeadsResponse | null>(null);
@@ -43,22 +43,49 @@ export function DealFinderView() {
   const [page, setPage] = useState(1);
   const [saving, setSaving] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterVersion, setFilterVersion] = useState(0); // remounts the uncontrolled filter inputs on reset
+  const [savingScan, setSavingScan] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await api.leads(filters, sort, page, 25));
+      setData(await api.leads(filters, sort, page, 25, activeScan && newOnly ? activeScan.since : null));
     } catch (e) {
       toast({ title: 'Could not load leads', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  }, [filters, sort, page, toast]);
+  }, [filters, sort, page, toast, activeScan, newOnly]);
 
   useEffect(() => {
     load();
   }, [load, dealRefreshKey]);
+
+  // entering a scan's "new items" view: newest first so the fresh finds are on top
+  useEffect(() => {
+    if (activeScan && newOnly) setSort('newest');
+    setPage(1);
+  }, [activeScan?.id, newOnly]);
+
+  const doReset = () => {
+    resetFilters();
+    setFilterVersion((v) => v + 1);
+    setPage(1);
+  };
+
+  const saveFiltersToScan = async () => {
+    if (!activeScan) return;
+    setSavingScan(true);
+    try {
+      await api.updateScanSet(activeScan.id, { filters });
+      toast({ title: 'Scan updated', description: `"${activeScan.name}" now uses the filters currently applied.` });
+    } catch (e) {
+      toast({ title: 'Could not update scan', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    } finally {
+      setSavingScan(false);
+    }
+  };
 
   const patch = (p: Partial<LeadFilters>) => {
     setFilters({ ...filters, ...p });
@@ -97,7 +124,8 @@ export function DealFinderView() {
     setSaving(leadId);
     try {
       const res = await api.saveToPipeline(leadId);
-      toast({ title: res.existed ? 'Already in your pipeline' : 'Saved to pipeline', description: res.existed ? 'Track it from the Pipeline view.' : 'Status set to NEW.' });
+      const warn = res.warnings?.length ? `Heads up: ${res.warnings.join(', ')} — check before buying.` : null;
+      toast({ title: res.existed ? 'Already in your pipeline' : 'Saved to pipeline', description: res.existed ? 'Track it from the Pipeline view.' : warn ?? 'Status set to NEW.', variant: warn ? 'destructive' : undefined });
       load();
     } catch (e) {
       toast({ title: 'Save failed', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
@@ -119,7 +147,7 @@ export function DealFinderView() {
             <Filter className="h-3.5 w-3.5" /> Filters
             {activeFilterCount > 0 && <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{activeFilterCount}</Badge>}
           </div>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-slate-500" onClick={resetFilters}>
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-slate-500" onClick={doReset}>
             <RotateCcw className="mr-1 h-3 w-3" /> Reset
           </Button>
         </div>
@@ -128,7 +156,7 @@ export function DealFinderView() {
           {filtersOpen ? 'Hide filter controls' : 'Show filter controls'}
         </Button>
 
-        <div className={cn('mt-4 space-y-4 xl:mt-0 xl:block', filtersOpen ? 'block' : 'hidden')}>
+        <div key={filterVersion} className={cn('mt-4 space-y-4 xl:mt-0 xl:block', filtersOpen ? 'block' : 'hidden')}>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
             <Input placeholder="Title, brand, ASIN, store…" className="pl-8" defaultValue={filters.search} onChange={(e) => setSearch(e.target.value)} aria-label="Search leads" />
@@ -224,6 +252,41 @@ export function DealFinderView() {
 
       {/* ---------- results ---------- */}
       <div className="min-w-0 flex-1 space-y-3">
+        {activeScan && (
+          <Card className="border-emerald-200 bg-emerald-50/60 p-3 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Radar className="h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-800">Scan: {activeScan.name}</p>
+                  <p className="text-[11px] text-slate-500">Adjust the filters on the left, then save them back to the scan if you like the result.</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex overflow-hidden rounded-md border border-emerald-200 bg-white text-[11px] font-medium">
+                  <button
+                    className={cn('px-2.5 py-1.5', newOnly ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50')}
+                    onClick={() => setNewOnly(true)}
+                  >
+                    New from last run{activeScan.newCount > 0 ? ` (${activeScan.newCount})` : ''}
+                  </button>
+                  <button
+                    className={cn('px-2.5 py-1.5', !newOnly ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50')}
+                    onClick={() => setNewOnly(false)}
+                  >
+                    All matching
+                  </button>
+                </div>
+                <Button size="sm" variant="outline" className="h-8 gap-1 bg-white text-[11px]" onClick={saveFiltersToScan} disabled={savingScan}>
+                  <Save className="h-3 w-3" /> Save filters to scan
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 gap-1 text-[11px] text-slate-500" onClick={clearScan}>
+                  <X className="h-3 w-3" /> Exit scan
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-slate-600" aria-live="polite">
             {loading ? 'Querying deal store…' : (
@@ -274,13 +337,21 @@ export function DealFinderView() {
           {!loading && rows.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-16 text-center">
               <Search className="h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-600">No leads match these filters</p>
+              <p className="text-sm font-medium text-slate-600">{activeScan && newOnly ? 'No new items from the last run' : 'No leads match these filters'}</p>
               <p className="max-w-xs text-xs text-slate-400">
-                Try relaxing min ROI/profit, clearing risk-flag exclusions, or running a new scan cycle — fresh stock lands every few hours.
+                {activeScan && newOnly
+                  ? 'The last run found nothing new that passes this scan’s filters. Switch to “All matching”, or run the scan again.'
+                  : 'Try relaxing min ROI/profit, clearing risk-flag exclusions, or running a new scan cycle — fresh stock lands every few hours.'}
               </p>
-              <Button size="sm" variant="outline" className="mt-1 text-xs" onClick={resetFilters}>
-                Clear filters
-              </Button>
+              {activeScan && newOnly ? (
+                <Button size="sm" variant="outline" className="mt-1 text-xs" onClick={() => setNewOnly(false)}>
+                  Show all matching
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" className="mt-1 text-xs" onClick={doReset}>
+                  Clear filters
+                </Button>
+              )}
             </div>
           )}
 
@@ -314,6 +385,7 @@ export function DealFinderView() {
                         )}
                         <FreshnessDot fresh={l.fresh} ageH={l.priceAgeH} tier={l.retailerTier} />
                       </div>
+                      <ScanChips scans={l.scans} max={2} className="mt-1" />
                     </div>
                   </div>
 

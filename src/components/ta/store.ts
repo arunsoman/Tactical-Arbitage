@@ -8,6 +8,15 @@ import type { BootstrapDTO, SettingsDTO } from '@/lib/ta/api';
 
 export type View = 'dashboard' | 'deals' | 'scans' | 'pipeline' | 'retailers' | 'billing' | 'settings';
 
+/** A saved scan whose results are being browsed in Deal Finder. */
+export interface ActiveScan {
+  id: string;
+  name: string;
+  /** leads first seen at/after this ISO time are "new from the last run" */
+  since: string | null;
+  newCount: number;
+}
+
 interface TAState {
   view: View;
   setView: (v: View) => void;
@@ -19,6 +28,13 @@ interface TAState {
   filters: LeadFilters;
   setFilters: (f: LeadFilters) => void;
   resetFilters: () => void;
+
+  activeScan: ActiveScan | null;
+  newOnly: boolean;
+  /** open Deal Finder scoped to a scan (filters + optional new-only) */
+  browseScan: (scan: ActiveScan, filters: LeadFilters, newOnly: boolean) => void;
+  setNewOnly: (b: boolean) => void;
+  clearScan: () => void;
 
   selectedLeadId: string | null;
   openLead: (id: string | null) => void;
@@ -42,6 +58,12 @@ export const useTAStore = create<TAState>((set) => ({
   filters: { ...DEFAULT_FILTERS },
   setFilters: (f) => set({ filters: f }),
   resetFilters: () => set({ filters: { ...DEFAULT_FILTERS } }),
+
+  activeScan: null,
+  newOnly: false,
+  browseScan: (scan, filters, newOnly) => set({ activeScan: scan, filters: { ...DEFAULT_FILTERS, ...filters }, newOnly, view: 'deals' }),
+  setNewOnly: (b) => set({ newOnly: b }),
+  clearScan: () => set({ activeScan: null, newOnly: false }),
 
   selectedLeadId: null,
   openLead: (id) => set({ selectedLeadId: id }),

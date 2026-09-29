@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { RISK_FLAG_META, type RiskFlag } from '@/lib/ta/types';
 import { parseJsonArray } from '@/lib/ta/types';
-import { Clock, ShieldAlert, ScanSearch } from 'lucide-react';
+import { Clock, ShieldAlert, ScanSearch, Radar } from 'lucide-react';
+import type { LeadScanRef } from '@/lib/ta/api';
 
 export function RiskFlagChips({ flags, max = 3, className }: { flags: string | RiskFlag[]; max?: number; className?: string }) {
   const list = Array.isArray(flags) ? flags : parseJsonArray(flags);
@@ -94,5 +95,31 @@ export function MatchBadge({ method, confidence, flagged }: { method: string; co
     <Badge variant="outline" className="gap-1 border-stone-300 bg-stone-50 px-1.5 py-0 text-[10px] text-stone-600">
       <Clock className="h-3 w-3" /> Fuzzy {(confidence * 100).toFixed(0)}%
     </Badge>
+  );
+}
+
+/** Which saved scans surface this product (discovered-by first, then filter matches). */
+export function ScanChips({ scans, max = 2, className }: { scans?: LeadScanRef[]; max?: number; className?: string }) {
+  if (!scans || scans.length === 0) return null;
+  const shown = scans.slice(0, max);
+  const rest = scans.length - shown.length;
+  const title = scans.map((s) => (s.found ? `${s.name} (found it)` : `${s.name} (matches filters)`)).join('\n');
+  return (
+    <div className={cn('flex flex-wrap items-center gap-1', className)} title={title}>
+      {shown.map((s) => (
+        <Badge
+          key={s.id}
+          variant="outline"
+          className={cn(
+            'gap-1 px-1.5 py-0 text-[10px] font-medium',
+            s.found ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-sky-200 bg-sky-50 text-sky-700'
+          )}
+        >
+          <Radar className="h-2.5 w-2.5" />
+          {s.name}
+        </Badge>
+      ))}
+      {rest > 0 && <span className="text-[10px] text-slate-400">+{rest}</span>}
+    </div>
   );
 }

@@ -4,6 +4,7 @@
 // engine, inserts new deduplicating leads, drifts prices on existing stock,
 // and records ScanJobs + ActivityEvents (PRD §7.1, §9).
 
+import { matchesFilters } from './scanAttribution';
 import { db } from '@/lib/db';
 import { mintScanProduct, generateListings, RETAILERS, type GeneratedListing } from './catalog';
 import { createLeadFromMatch, settingsLike, isFresh, tierSlaHours, retailerShippingFor } from './leadEngine';
@@ -15,28 +16,6 @@ let listingsCache: GeneratedListing[] | null = null;
 function getListings(): GeneratedListing[] {
   if (!listingsCache) listingsCache = generateListings(42, 14);
   return listingsCache;
-}
-
-/** Does a lead satisfy a scan set's filters? (used to count "new leads" per scan set) */
-export function leadMatchesFilters(
-  lead: { category: string; retailerId: string; roiPct: number; netProfit: number; bsr: number; fbaOffers: number; riskFlags: string; fresh: boolean },
-  filters: LeadFilters,
-  settings: Settings
-): boolean {
-  if (filters.categories.length > 0 && !filters.categories.includes(lead.category)) return false;
-  if (filters.retailers.length > 0 && !filters.retailers.includes(lead.retailerId)) return false;
-  if (filters.minRoi != null && lead.roiPct < filters.minRoi) return false;
-  if (filters.minProfit != null && lead.netProfit < filters.minProfit) return false;
-  if (filters.maxBsr != null && lead.bsr > filters.maxBsr) return false;
-  if (filters.minFbaOffers != null && lead.fbaOffers < filters.minFbaOffers) return false;
-  if (settings.excludeAmazonRetail) {
-    const flags = JSON.parse(lead.riskFlags || '[]') as string[];
-    if (flags.includes('AMAZON_RETAIL')) return false;
-  }
-  const flags = JSON.parse(lead.riskFlags || '[]') as string[];
-  if (filters.excludeFlags.some((f) => flags.includes(f))) return false;
-  if (filters.requireFresh && !lead.fresh) return false;
-  return true;
 }
 
 export async function runScan(options: { scanSetId?: string; retailerLimit?: number; retailerIds?: string[] }): Promise<ScanRunSummary> {
@@ -157,22 +136,11 @@ export async function runScan(options: { scanSetId?: string; retailerLimit?: num
           priceAgeH: 0.2,
         });
         if (lead) {
-          const relevant = scanSetFilters
-            ? leadMatchesFilters(
-                {
-                  category: lead.category,
-                  retailerId: lead.retailerId,
-                  roiPct: lead.roiPct,
-                  netProfit: lead.netProfit,
-                  bsr: lead.bsr,
-                  fbaOffers: lead.fbaOffers,
-                  riskFlags: lead.riskFlags,
-                  fresh: lead.fresh,
-                },
-                scanSetFilters,
-                settings
-              )
-            : true;
+          if (scanSet) {
+            await db.lead.update({ where: { id: lead.id }, data: { foundByScanId: scanSet.id, foundByScanName: scanSet.name } });
+          }
+          // same matcher Deal Finder and the scan cards use, so counts always agree
+          const relevant = scanSetFilters ? matchesFilters(lead, scanSetFilters, settings) : true;
           if (relevant || !scanSetFilters) newLeads += 1;
         }
       } catch {
@@ -304,7 +272,7 @@ export async function runScan(options: { scanSetId?: string; retailerLimit?: num
   }
 
   if (scanSet) {
-    await db.scanSet.update({ where: { id: scanSet.id }, data: { lastRunAt: new Date() } });
+    await db.scanSet.update({ where: { id: scanSet.id }, data: { lastRunAt: new Date(), lastRunStartedAt: new Date(started) } });
   }
 
   await db.activityEvent.create({

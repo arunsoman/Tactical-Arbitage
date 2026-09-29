@@ -32,15 +32,18 @@ function FiltersSummary({ f }: { f: LeadFilters }) {
 }
 
 export function SavedScansView() {
-  const { openLead, bootstrap, setFilters, setView } = useTAStore();
+  const { openLead, bootstrap, browseScan } = useTAStore();
   const { toast } = useToast();
   const [scans, setScans] = useState<ScanSetDTO[] | null>(null);
   const [planLimit, setPlanLimit] = useState<number | null>(null);
   const [running, setRunning] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<ScanSetDTO | null>(null);
   const [name, setName] = useState('');
   const [schedule, setSchedule] = useState<ScanSchedule>('daily');
   const [minRoi, setMinRoi] = useState('30');
+  const [minProfit, setMinProfit] = useState('');
+  const [maxBsr, setMaxBsr] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -72,8 +75,12 @@ export function SavedScansView() {
   };
 
   const viewResults = (scan: ScanSetDTO) => {
-    setFilters({ ...DEFAULT_FILTERS, ...scan.filters });
-    setView('deals');
+    // default to the new items from the latest run; Deal Finder lets you flip to all matching
+    browseScan(
+      { id: scan.id, name: scan.name, since: scan.lastRunStartedAt ?? scan.lastRunAt, newCount: scan.newSinceRun },
+      scan.filters,
+      scan.newSinceRun > 0
+    );
   };
 
   const toggleActive = async (scan: ScanSetDTO, active: boolean) => {
@@ -95,17 +102,52 @@ export function SavedScansView() {
     }
   };
 
-  const create = async () => {
+  const openCreate = () => {
+    setEditing(null);
+    setName('');
+    setSchedule('daily');
+    setMinRoi('30');
+    setMinProfit('');
+    setMaxBsr('');
+    setCreateOpen(true);
+  };
+
+  const openEdit = (scan: ScanSetDTO) => {
+    setEditing(scan);
+    setName(scan.name);
+    setSchedule(scan.schedule);
+    setMinRoi(scan.filters.minRoi == null ? '' : String(scan.filters.minRoi));
+    setMinProfit(scan.filters.minProfit == null ? '' : String(scan.filters.minProfit));
+    setMaxBsr(scan.filters.maxBsr == null ? '' : String(scan.filters.maxBsr));
+    setCreateOpen(true);
+  };
+
+  const numOrNull = (v: string) => (v === '' ? null : Number(v));
+
+  const save = async () => {
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await api.createScanSet({
-        name: name.trim(),
-        schedule,
-        filters: { ...DEFAULT_FILTERS, minRoi: minRoi === '' ? null : Number(minRoi), requireFresh: true },
-      });
-      toast({ title: 'Scan saved', description: `"${name.trim()}" now runs ${SCHEDULE_LABELS[schedule].toLowerCase()}.` });
+      if (editing) {
+        await api.updateScanSet(editing.id, {
+          name: name.trim(),
+          schedule,
+          filters: { ...editing.filters, minRoi: numOrNull(minRoi), minProfit: numOrNull(minProfit), maxBsr: numOrNull(maxBsr) },
+        });
+        toast({ title: 'Scan updated', description: `"${name.trim()}" filters saved.` });
+      } else {
+        await api.createScanSet({
+          name: name.trim(),
+          schedule,
+          filters: { ...DEFAULT_FILTERS, minRoi: numOrNull(minRoi), minProfit: numOrNull(minProfit), maxBsr: numOrNull(maxBsr), requireFresh: true },
+        });
+        toast({
+          title: 'Scan saved',
+          description: `"${name.trim()}" is saved. It runs on its schedule while the app is open — or click Run now, then Show results.`,
+        });
+      }
       setCreateOpen(false);
+      setEditing(null);
       setName('');
       load();
     } catch (e) {
@@ -125,7 +167,7 @@ export function SavedScansView() {
             {planLimit != null && ` · ${scans?.length ?? 0}/${planLimit} used on your plan`}
           </p>
         </div>
-        <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-500" onClick={() => setCreateOpen(true)}>
+        <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-500" onClick={openCreate}>
           <Plus className="h-3.5 w-3.5" /> New scan
         </Button>
       </div>
@@ -142,7 +184,7 @@ export function SavedScansView() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
             <p className="text-sm font-medium text-slate-600">No saved scans yet</p>
-            <p className="max-w-sm text-xs text-slate-400">Scans re-run on a schedule, dedupe their results, and feed your daily digest.</p>
+            <p className="max-w-sm text-xs text-slate-400">Saved scans keep a deduplicated result feed you can open in Deal Finder.</p>
           </CardContent>
         </Card>
       )}
@@ -155,13 +197,13 @@ export function SavedScansView() {
                 <div>
                   <CardTitle className="text-sm font-bold text-slate-800">{s.name}</CardTitle>
                   <p className="mt-0.5 text-[11px] text-slate-500">
-                    {SCHEDULE_LABELS[s.schedule]}
+                    {SCHEDULE_LABELS[s.schedule]}{s.schedule !== 'manual' && s.active && <span className="text-slate-400"> (auto-runs while the app is open)</span>}
                     {s.lastRunAt && ` · last run ${new Date(s.lastRunAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-1.5">
                   <Switch checked={s.active} onCheckedChange={(v) => toggleActive(s, v)} aria-label={`Toggle ${s.name}`} />
-                  <Button size="icon" variant="ghost" className={touchIconSize} aria-label="Edit scan">
+                  <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => openEdit(s)} aria-label={`Edit ${s.name}`}>
                     <Pencil className="h-3.5 w-3.5 text-slate-400" />
                   </Button>
                   <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => remove(s)} aria-label={`Delete ${s.name}`}>
@@ -182,7 +224,8 @@ export function SavedScansView() {
                 <div className="flex w-full gap-2 sm:w-auto">
                   <Button size="sm" variant="outline" className="h-8 flex-1 gap-1 text-[11px] sm:flex-none" onClick={() => viewResults(s)}>
                     <ListFilter className="h-3 w-3" />
-                    View results
+                    Show results
+                    {s.newSinceRun > 0 && <span className="rounded-full bg-emerald-600 px-1.5 text-[9px] font-bold text-white">{s.newSinceRun} new</span>}
                   </Button>
                   <Button size="sm" variant="outline" className="h-8 flex-1 gap-1 text-[11px] sm:flex-none" onClick={() => runNow(s)} disabled={running === s.id}>
                     {running === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
@@ -207,8 +250,8 @@ export function SavedScansView() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>New saved scan</DialogTitle>
-            <DialogDescription>Pick a schedule and ROI floor. Category and flag filters can be refined from Deal Finder.</DialogDescription>
+            <DialogTitle>{editing ? 'Edit saved scan' : 'New saved scan'}</DialogTitle>
+            <DialogDescription>Set the thresholds this scan's results must meet. Category and flag filters are kept as they are.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-1">
             <div>
@@ -235,14 +278,22 @@ export function SavedScansView() {
                 <Label className="text-xs font-semibold text-slate-600">Min ROI %</Label>
                 <Input className="mt-1" type="number" value={minRoi} onChange={(e) => setMinRoi(e.target.value)} />
               </div>
+              <div>
+                <Label className="text-xs font-semibold text-slate-600">Min profit $</Label>
+                <Input className="mt-1" type="number" placeholder="—" value={minProfit} onChange={(e) => setMinProfit(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-slate-600">Max BSR</Label>
+                <Input className="mt-1" type="number" placeholder="—" value={maxBsr} onChange={(e) => setMaxBsr(e.target.value)} />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setCreateOpen(false)}>
               Cancel
             </Button>
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500" onClick={create} disabled={busy || !name.trim()}>
-              Save scan
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500" onClick={save} disabled={busy || !name.trim()}>
+              {editing ? 'Save changes' : 'Save scan'}
             </Button>
           </DialogFooter>
         </DialogContent>

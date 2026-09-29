@@ -282,6 +282,17 @@ export async function seedDatabase() {
           status,
           notes: status === 'NEW' ? null : pick(notesByStatus[status]),
           tags: JSON.stringify(status === 'NEW' ? [] : pick(tagPool)),
+          unitCost: ['PURCHASED', 'SHIPPED', 'LIVE', 'WON', 'LOST'].includes(status) ? Math.round(l.retailerPrice * (0.97 + Math.random() * 0.03) * 100) / 100 : null,
+          orderNumber: ['PURCHASED', 'SHIPPED', 'LIVE', 'WON', 'LOST'].includes(status) ? `#${100000000 + Math.floor(Math.random() * 899999999)}` : null,
+          realizedProfit:
+            status === 'WON'
+              ? Math.round(l.netProfit * qty * (0.85 + Math.random() * 0.3) * 100) / 100
+              : status === 'LOST'
+                ? Math.round((l.netProfit < 0 ? l.netProfit : -(2 + Math.random() * 4)) * qty * 100) / 100
+                : null,
+          expectedProfit: l.netProfit,
+          expectedRoi: l.roiPct,
+          buyPrice: l.retailerPrice,
           qty: status === 'NEW' || status === 'INTERESTED' ? 1 : qty,
           owner: Math.random() < 0.3 ? 'VA — Priya' : 'Main',
           createdAt: new Date(now - (0.5 + Math.random() * maxAgeD) * 24 * HOURS),
@@ -293,16 +304,16 @@ export async function seedDatabase() {
   // ---- saved scans (the 3 onboarding defaults + 1 power-user scan)
   const mkFilters = (over: Partial<typeof DEFAULT_FILTERS>) => JSON.stringify({ ...DEFAULT_FILTERS, minProfit: 5, minRoi: 25, ...over });
   await db.scanSet.create({
-    data: { name: 'Clearance Health & Beauty', schedule: 'every_2h', filtersJson: mkFilters({ categories: ['Health & Household', 'Beauty'], minRoi: 30, excludeFlags: ['GATED', 'HAZMAT'] }), active: true, isDefault: true, lastRunAt: new Date(now - 2 * HOURS) },
+    data: { name: 'Clearance Health & Beauty', schedule: 'every_2h', filtersJson: mkFilters({ categories: ['Health & Household', 'Beauty'], minRoi: 30, excludeFlags: ['GATED', 'HAZMAT'] }), active: true, isDefault: true, lastRunAt: new Date(now - 2 * HOURS), lastRunStartedAt: new Date(now - 2 * HOURS) },
   });
   await db.scanSet.create({
-    data: { name: 'Toys deal feed', schedule: 'daily', filtersJson: mkFilters({ categories: ['Toys & Games'], minRoi: 25, excludeFlags: ['IP_CLAIM'] }), active: true, isDefault: true, lastRunAt: new Date(now - 6 * HOURS) },
+    data: { name: 'Toys deal feed', schedule: 'daily', filtersJson: mkFilters({ categories: ['Toys & Games'], minRoi: 25, excludeFlags: ['IP_CLAIM'] }), active: true, isDefault: true, lastRunAt: new Date(now - 6 * HOURS), lastRunStartedAt: new Date(now - 6 * HOURS) },
   });
   await db.scanSet.create({
-    data: { name: 'Grocery monthly deals', schedule: 'weekly', filtersJson: mkFilters({ categories: ['Grocery & Gourmet'], minRoi: 20 }), active: true, isDefault: true, lastRunAt: new Date(now - 30 * HOURS) },
+    data: { name: 'Grocery monthly deals', schedule: 'weekly', filtersJson: mkFilters({ categories: ['Grocery & Gourmet'], minRoi: 20 }), active: true, isDefault: true, lastRunAt: new Date(now - 30 * HOURS), lastRunStartedAt: new Date(now - 30 * HOURS) },
   });
   await db.scanSet.create({
-    data: { name: 'High-velocity Tier A sweep', schedule: 'every_12h', filtersJson: mkFilters({ minRoi: 35, minProfit: 8, maxBsr: 80000, excludeFlags: ['GATED', 'HAZMAT', 'AMAZON_RETAIL'] }), active: true, isDefault: false, lastRunAt: new Date(now - 4 * HOURS) },
+    data: { name: 'High-velocity Tier A sweep', schedule: 'every_12h', filtersJson: mkFilters({ minRoi: 35, minProfit: 8, maxBsr: 80000, excludeFlags: ['GATED', 'HAZMAT', 'AMAZON_RETAIL'] }), active: true, isDefault: false, lastRunAt: new Date(now - 4 * HOURS), lastRunStartedAt: new Date(now - 4 * HOURS) },
   });
 
   // ---- scan job history (14 days, 3-6 jobs/day)

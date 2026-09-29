@@ -3,10 +3,10 @@
 // Tactical Arbitrage — app shell: sidebar nav, topbar (global scan runner),
 // view switching, and the first-run onboarding gate.
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTAStore, type View } from './store';
 import { api, type BootstrapDTO } from '@/lib/ta/api';
-import { PLANS } from '@/lib/ta/types';
+import { PLANS, SCHEDULE_HOURS } from '@/lib/ta/types';
 import { ProductImage } from './product-image';
 import { DashboardView } from './dashboard';
 import { DealFinderView } from './deal-finder';
@@ -87,6 +87,40 @@ export function TAApp() {
       setScanning(false);
     }
   }, [setScanning, toast, bumpDealRefresh, loadBootstrap]);
+
+  // Scheduler: while the app is open, run any active saved scan whose interval has elapsed
+  // (one per tick). There is no server-side cron in this demo build.
+  const autoRunning = useRef(false);
+  const onboarded = bootstrap?.settings.onboarded ?? false;
+  useEffect(() => {
+    if (!onboarded) return;
+    const tick = async () => {
+      if (autoRunning.current || useTAStore.getState().scanning) return;
+      autoRunning.current = true;
+      try {
+        const { scans } = await api.scanSets();
+        const due = scans.find((s) => {
+          const hours = SCHEDULE_HOURS[s.schedule];
+          return s.active && hours != null && Date.now() - new Date(s.lastRunAt ?? 0).getTime() >= hours * 3600e3;
+        });
+        if (!due) return;
+        const res = await api.scanRun({ scanSetId: due.id, retailerLimit: 4 });
+        toast({ title: `Scheduled scan "${due.name}" ran`, description: `${res.summary.totals.newLeads} new matching leads — open Saved Scans → Show results.` });
+        bumpDealRefresh();
+        void loadBootstrap();
+      } catch {
+        // slot busy or transient failure — try again next tick
+      } finally {
+        autoRunning.current = false;
+      }
+    };
+    const first = setTimeout(tick, 5000);
+    const every = setInterval(tick, 60_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(every);
+    };
+  }, [onboarded, toast, bumpDealRefresh, loadBootstrap]);
 
   if (!bootstrap) {
     return (

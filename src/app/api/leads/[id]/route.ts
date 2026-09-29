@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { parseJsonArray } from '@/lib/ta/types';
+import { loadScanIndex, scansForLead } from '@/lib/ta/scanAttribution';
+import { buyUrl } from '@/lib/ta/buyLink';
 import { round2 } from '@/lib/ta/profit';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +30,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const history = JSON.parse(listing.historyJson || '[]');
   const historyPoints = Array.isArray(history) ? history : [];
 
+  const [index, settings] = await Promise.all([loadScanIndex(), db.settings.findUnique({ where: { id: 'singleton' } })]);
   return NextResponse.json({
+    buyUrl: buyUrl(retailer.domain, lead.title),
+    scans: scansForLead(lead, index, settings ?? { excludeAmazonRetail: false }),
     lead: { ...lead, riskFlagList: parseJsonArray(lead.riskFlags) },
     match: {
       method: lead.match.method,

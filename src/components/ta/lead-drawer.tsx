@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProductImage } from './product-image';
-import { RiskFlagChips, MatchBadge, RoiBadge, ProfitText, FreshnessDot } from './badges';
+import { RiskFlagChips, MatchBadge, RoiBadge, ProfitText, FreshnessDot, ScanChips } from './badges';
 import { RISK_FLAG_META, PIPELINE_STATUSES } from '@/lib/ta/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ExternalLink, Star, ShieldAlert, Info, Boxes, TrendingDown, TrendingUp, Minus } from 'lucide-react';
@@ -65,9 +65,10 @@ export function LeadDrawer() {
         await api.updatePipeline(detail.pipeline.id, { status: nextStatus ?? status });
         toast({ title: 'Pipeline updated', description: `Status → ${nextStatus ?? status}` });
       } else {
-        await api.saveToPipeline(detail.lead.id);
+        const saved = await api.saveToPipeline(detail.lead.id);
         if (nextStatus && nextStatus !== 'NEW') await api.updatePipeline((await api.pipeline()).items.find((i) => i.lead.id === detail.lead.id)!.id, { status: nextStatus });
-        toast({ title: 'Saved to pipeline', description: `Status → ${nextStatus ?? 'NEW'}` });
+        const warn = saved.warnings?.length ? `Heads up: ${saved.warnings.join(', ')} — check before buying.` : null;
+        toast({ title: 'Saved to pipeline', description: warn ?? `Status → ${nextStatus ?? 'NEW'}`, variant: warn ? 'destructive' : undefined });
       }
       await load(detail.lead.id);
       bumpDealRefresh();
@@ -129,7 +130,13 @@ export function LeadDrawer() {
                     <span>· ASIN {l.asin}</span>
                     <MatchBadge method={m.method} confidence={m.confidence} flagged={m.flagged} />
                   </SheetDescription>
+                  <ScanChips scans={detail.scans} max={4} className="mt-1.5" />
                 </div>
+                {detail.buyUrl && (
+                  <Button size="sm" className="h-8 w-full gap-1 bg-emerald-600 text-[11px] hover:bg-emerald-500 sm:w-auto" onClick={() => window.open(detail.buyUrl, '_blank', 'noopener')}>
+                    <ExternalLink className="h-3 w-3" /> Buy at {l.retailerName}
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" className="h-8 w-full gap-1 text-[11px] sm:w-auto" asChild={false} onClick={() => window.open(`https://www.amazon.com/dp/${l.asin}`, '_blank')}>
                   <ExternalLink className="h-3 w-3" /> Amazon
                 </Button>

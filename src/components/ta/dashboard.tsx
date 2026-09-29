@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { ProductImage } from './product-image';
-import { RiskFlagChips, ProfitText, RoiBadge } from './badges';
+import { RiskFlagChips, ProfitText, RoiBadge, ScanChips } from './badges';
 import { AreaChart, BarChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Target, TrendingUp, ShieldCheck, RefreshCw, Radar, Store, Activity, Zap, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -174,6 +174,7 @@ export function DashboardView() {
                     <span className="font-mono">${l.retailerPrice.toFixed(2)} → ${l.buyBox.toFixed(2)}</span>
                     <RiskFlagChips flags={l.riskFlags} max={2} />
                   </div>
+                  <ScanChips scans={l.scans} max={2} className="mt-1" />
                 </div>
                 <div className="text-right">
                   <ProfitText value={l.netProfit} />

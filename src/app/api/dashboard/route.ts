@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { loadScanIndex, scansForLead } from '@/lib/ta/scanAttribution';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,7 @@ const DAY = 864e5;
 export async function GET() {
   const now = Date.now();
   const settings = (await db.settings.findUnique({ where: { id: 'singleton' } }))!;
+  const scanIndex = await loadScanIndex();
 
   const [
     leadsToday,
@@ -118,6 +120,7 @@ export async function GET() {
     })),
     activity,
     topOpportunities: topOpportunities.map((l) => ({
+      scans: scansForLead(l, scanIndex, settings),
       id: l.id,
       title: l.title,
       retailerName: l.retailerName,
