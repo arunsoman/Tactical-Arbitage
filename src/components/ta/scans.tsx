@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Play, Plus, Trash2, Pencil, Loader2 } from 'lucide-react';
+import { Play, Plus, Trash2, Pencil, Loader2, ListFilter } from 'lucide-react';
 import { DEFAULT_FILTERS, type LeadFilters } from '@/lib/ta/types';
 import { touchIconSize } from '@/lib/utils';
 
@@ -32,7 +32,7 @@ function FiltersSummary({ f }: { f: LeadFilters }) {
 }
 
 export function SavedScansView() {
-  const { openLead, bootstrap } = useTAStore();
+  const { openLead, bootstrap, setFilters, setView } = useTAStore();
   const { toast } = useToast();
   const [scans, setScans] = useState<ScanSetDTO[] | null>(null);
   const [planLimit, setPlanLimit] = useState<number | null>(null);
@@ -69,6 +69,11 @@ export function SavedScansView() {
     } finally {
       setRunning(null);
     }
+  };
+
+  const viewResults = (scan: ScanSetDTO) => {
+    setFilters({ ...DEFAULT_FILTERS, ...scan.filters });
+    setView('deals');
   };
 
   const toggleActive = async (scan: ScanSetDTO, active: boolean) => {
@@ -174,10 +179,16 @@ export function SavedScansView() {
                   <span className="font-semibold text-slate-700">{s.total}</span>
                   <span className="text-slate-500"> total in feed</span>
                 </div>
-                <Button size="sm" variant="outline" className="h-8 w-full gap-1 text-[11px] sm:w-auto" onClick={() => runNow(s)} disabled={running === s.id}>
-                  {running === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-                  Run now
-                </Button>
+                <div className="flex w-full gap-2 sm:w-auto">
+                  <Button size="sm" variant="outline" className="h-8 flex-1 gap-1 text-[11px] sm:flex-none" onClick={() => viewResults(s)}>
+                    <ListFilter className="h-3 w-3" />
+                    View results
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 flex-1 gap-1 text-[11px] sm:flex-none" onClick={() => runNow(s)} disabled={running === s.id}>
+                    {running === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                    Run now
+                  </Button>
+                </div>
               </div>
               {s.filters.categories.length > 0 && (
                 <div className="flex flex-wrap gap-1">

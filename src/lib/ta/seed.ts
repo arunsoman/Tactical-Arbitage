@@ -140,7 +140,7 @@ export async function seedDatabase() {
   const s = settingsLike(settings);
 
   let leadCount = 0;
-  const createdLeads: { id: string; firstSeenAt: Date; roiPct: number }[] = [];
+  const createdLeads: { id: string; firstSeenAt: Date; roiPct: number; netProfit: number; retailerPrice: number; riskFlags: string[] }[] = [];
 
   for (const p of products) {
     const retailer = retailerRows[p.retailerIdx];
@@ -224,52 +224,69 @@ export async function seedDatabase() {
         where: { id: lead.id },
         data: { fresh: isFresh(retailer.tier, priceAgeH), lastVerifiedAt: new Date(now - priceAgeH * HOURS) },
       });
-      createdLeads.push({ id: lead.id, firstSeenAt, roiPct: lead.roiPct });
+      createdLeads.push({
+        id: lead.id,
+        firstSeenAt,
+        roiPct: lead.roiPct,
+        netProfit: lead.netProfit,
+        retailerPrice: lead.retailerPrice,
+        riskFlags: JSON.parse(lead.riskFlags) as string[],
+      });
       leadCount += 1;
     }
   }
 
   // ---- pipeline state across statuses (FR-7.1)
-  const statuses = [
-    { status: 'NEW', n: 8 },
-    { status: 'INTERESTED', n: 6 },
-    { status: 'PURCHASED', n: 5 },
-    { status: 'SHIPPED', n: 3 },
-    { status: 'LIVE', n: 4 },
-    { status: 'WON', n: 2 },
-    { status: 'LOST', n: 2 },
-  ];
-  const notes = [
-    'VA confirmed 24 units in stock. Ordered sample first.',
-    'Coupon stacks with clearance — verified at checkout.',
-    'Watch for restock — buy box trending up.',
-    'Requested gating approval, pending.',
-    'Meltable risk — holding until October.',
-    'Competitor undercut by $2 — recheck before reorder.',
-    'Great seller history on this brand, second reorder.',
-  ];
+  // Coherent pipeline: only profitable leads are pursued; anything that has been bought (PURCHASED+)
+  // avoids blocking risk flags; WON always made money; LOST is a real loss or a blocked listing.
+  const BLOCKING = ['GATED', 'HAZMAT', 'AMAZON_RETAIL', 'IP_CLAIM'];
+  const notesByStatus: Record<string, string[]> = {
+    INTERESTED: ['Watch for restock — buy box trending up.', 'Checking sell-through before buying.', 'Good ROI — waiting on VA stock check.'],
+    PURCHASED: ['VA confirmed stock at store. Order placed.', 'Coupon stacks with clearance — verified at checkout.', 'Ordered sample first, then bulk.'],
+    SHIPPED: ['Inbound shipment created, prep done.', 'Sent to FBA — tracking active.', 'Boxed and labeled by VA.'],
+    LIVE: ['Listed at Buy Box price, selling steadily.', 'Great seller history on this brand, second reorder.', 'Watch competitors — recheck price weekly.'],
+    WON: ['Sold through at target margin — reorder.', 'Sold out in under two weeks, strong repeat buy.', 'Beat projected profit — add to reorder list.'],
+    LOST: ['Price crashed after purchase — sold at a loss.', 'Amazon took the Buy Box; units stuck.', 'Listing blocked after purchase — returned to store.'],
+  };
   const tagPool = [['high-roi'], ['reorder'], ['H&B'], ['va-sourced'], ['clearance'], ['watch'], ['grocery']];
-  const shuffled = [...createdLeads].sort(() => Math.random() - 0.5);
+  const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+  const clean = (l: (typeof createdLeads)[number]) => !l.riskFlags.some((f) => BLOCKING.includes(f));
+  const profitable = createdLeads.filter((l) => l.netProfit >= 4 && l.roiPct >= 20).sort(() => Math.random() - 0.5);
+  const losing = createdLeads.filter((l) => l.netProfit < 0 || !clean(l)).sort(() => Math.random() - 0.5);
+  const cleanProfitable = profitable.filter(clean);
   const used = new Set<string>();
-  let cursor = 0;
-  for (const st of statuses) {
-    let placed = 0;
-    while (placed < st.n && cursor < shuffled.length) {
-      const l = shuffled[cursor++];
-      if (used.has(l.id)) continue;
-      used.add(l.id);
+  const take = (pool: typeof createdLeads) => {
+    const l = pool.find((x) => !used.has(x.id));
+    if (l) used.add(l.id);
+    return l;
+  };
+  // [status, count, pool, max age in days]
+  const plan: [string, number, typeof createdLeads, number][] = [
+    ['NEW', 8, profitable, 2],
+    ['INTERESTED', 6, profitable, 4],
+    ['PURCHASED', 5, cleanProfitable, 6],
+    ['SHIPPED', 3, cleanProfitable, 8],
+    ['LIVE', 4, cleanProfitable, 10],
+    ['WON', 4, cleanProfitable, 14],
+    ['LOST', 2, losing, 14],
+  ];
+  for (const [status, n, pool, maxAgeD] of plan) {
+    for (let i = 0; i < n; i++) {
+      const l = take(pool);
+      if (!l) break;
+      // cheaper items are bought in larger quantities
+      const qty = l.retailerPrice < 15 ? 6 + Math.floor(Math.random() * 7) : l.retailerPrice < 40 ? 3 + Math.floor(Math.random() * 5) : 1 + Math.floor(Math.random() * 3);
       await db.pipelineItem.create({
         data: {
           leadId: l.id,
-          status: st.status,
-          notes: st.status === 'NEW' ? null : notes[Math.floor(Math.random() * notes.length)],
-          tags: JSON.stringify(st.status === 'NEW' ? [] : tagPool[Math.floor(Math.random() * tagPool.length)]),
-          qty: 1 + Math.floor(Math.random() * 12),
+          status,
+          notes: status === 'NEW' ? null : pick(notesByStatus[status]),
+          tags: JSON.stringify(status === 'NEW' ? [] : pick(tagPool)),
+          qty: status === 'NEW' || status === 'INTERESTED' ? 1 : qty,
           owner: Math.random() < 0.3 ? 'VA — Priya' : 'Main',
-          createdAt: new Date(now - Math.random() * 10 * 24 * HOURS),
+          createdAt: new Date(now - (0.5 + Math.random() * maxAgeD) * 24 * HOURS),
         },
       });
-      placed += 1;
     }
   }
 
