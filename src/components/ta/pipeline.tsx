@@ -15,8 +15,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProductImage } from './product-image';
 import { RiskFlagChips, ProfitText, ScanChips } from './badges';
+import { OutcomeSheet, type OutcomeSheetTarget } from './outcome-sheet';
 import { Input } from '@/components/ui/input';
-import { Download, Trash2, ChevronLeft, ChevronRight, UserRound, ExternalLink, ShoppingCart } from 'lucide-react';
+import { Download, Trash2, ChevronLeft, ChevronRight, UserRound, ExternalLink, ShoppingCart, NotebookPen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn, touchIconSize } from '@/lib/utils';
@@ -41,6 +42,7 @@ export function PipelineView() {
   const [pCost, setPCost] = useState('');
   const [pOrder, setPOrder] = useState('');
   const [pBusy, setPBusy] = useState(false);
+  const [outcomeTarget, setOutcomeTarget] = useState<OutcomeSheetTarget | null>(null);
   const perPage = 12;
   const pages = Math.max(1, Math.ceil((items?.length ?? 0) / perPage));
   const visible = items?.slice(page * perPage, page * perPage + perPage) ?? [];
@@ -239,6 +241,25 @@ export function PipelineView() {
                 )}
                 {item.qty > 1 && <Badge variant="secondary" className="text-[10px]">×{item.qty}</Badge>}
                 <Badge className={cn('px-2 py-0.5 text-[10px] font-bold', STATUS_TONE[item.status])}>{item.status}</Badge>
+                {/* outcome quick-log (US-7): move pipeline items + log outcomes on mobile */}
+                {['PURCHASED', 'SHIPPED', 'LIVE'].includes(item.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"
+                    onClick={() =>
+                      setOutcomeTarget({
+                        leadId: item.lead.id,
+                        title: item.lead.title,
+                        buyBox: item.lead.buyBox,
+                        totalCost: item.lead.retailerPrice,
+                        roiPct: item.lead.roiPct,
+                      })
+                    }
+                  >
+                    <NotebookPen className="h-3 w-3" /> Outcome
+                  </Button>
+                )}
                 <Select value={item.status} onValueChange={(v) => setStatus(item, v)}>
                   <SelectTrigger className="h-8 w-28 bg-white text-[11px]" aria-label="Change status">
                     <SelectValue />
@@ -259,6 +280,8 @@ export function PipelineView() {
           </Card>
         ))}
       </div>
+
+      <OutcomeSheet target={outcomeTarget} onClose={() => setOutcomeTarget(null)} onLogged={() => void load()} />
 
       {items !== null && items.length > perPage && (
         <div className="flex items-center justify-between text-xs text-slate-500">

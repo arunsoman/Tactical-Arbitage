@@ -8,11 +8,23 @@ import { generateHistory } from './history';
 import { classifySizeTier, referralPctFor, FBA_FEES, round1, round2 } from './profit';
 import { createLeadFromMatch, settingsLike, isFresh } from './leadEngine';
 import { DEFAULT_FILTERS } from './types';
+import { seedOpsAndCare } from './seed-ops-care';
+import { seedShopDemo } from './seed-shop';
 
 const HOURS = 3600 * 1000;
 
 export async function seedDatabase() {
   // ---- reset (SQLite: delete in FK-safe order)
+  // care + ops tables first (tickets reference leads, connectors reference retailers)
+  await db.ticketEvent.deleteMany();
+  await db.ticketMessage.deleteMany();
+  await db.supportTicket.deleteMany();
+  await db.cannedResponse.deleteMany();
+  await db.connectorTestRun.deleteMany();
+  await db.connector.deleteMany();
+  await db.llmTestRun.deleteMany();
+  await db.llmModel.deleteMany();
+  await db.llmProvider.deleteMany();
   await db.activityEvent.deleteMany();
   await db.scanJob.deleteMany();
   await db.scanSet.deleteMany();
@@ -355,10 +367,140 @@ export async function seedDatabase() {
     await db.activityEvent.create({ data: { type: e.type, message: e.message, createdAt: new Date(now - e.ago * HOURS) } });
   }
 
+  // ---- AI-first v2.2 seed: team, outcome history (calibration data), trust, notifications
+  await db.outcome.deleteMany();
+  await db.auditEvent.deleteMany();
+  await db.dispute.deleteMany();
+  await db.suppression.deleteMany();
+  await db.notification.deleteMany();
+  await db.teamMember.deleteMany();
+  await db.approvalRequest.deleteMany();
+  await db.pickSnapshot.deleteMany();
+  await db.aiMetric.deleteMany();
+  await db.latencySample.deleteMany();
+  await db.deviceSession.deleteMany();
+
+  const leadRows = await db.lead.findMany({
+    select: { id: true, brand: true, asin: true, riskFlags: true, buyBox: true, totalCost: true, retailerName: true, score: true, netProfit: true, roiPct: true },
+  });
+
+  const members = [
+    { name: 'Sofia', role: 'OWNER', email: 'sofia@ta.demo' },
+    { name: 'Marcus', role: 'MANAGER', email: 'marcus@ta.demo' },
+    { name: 'Priya (VA)', role: 'VA', email: 'priya@ta.demo' },
+    { name: 'Dane (VA)', role: 'VA', email: 'dane@ta.demo' },
+  ];
+  for (const m of members) {
+    await db.teamMember.create({ data: { ...m, createdAt: new Date(now - 40 * 24 * HOURS) } });
+  }
+
+  // Outcome history — the learning loop's labels. Realized numbers derived from
+  // each lead's own economics with noise; win rate correlates with score; 30-day window.
+  const outcomeTypes = ['BOUGHT', 'BOUGHT', 'BOUGHT', 'BOUGHT', 'BOUGHT', 'MULTI_UNIT', 'MULTI_UNIT', 'PARTIAL', 'RETURNED', 'CANCELLED'];
+  const nOutcomes = 140;
+  // Buyers act on viable economics — sample from positive-profit leads only,
+  // biased toward better scores (that's what actually gets purchased).
+  const leadById = new Map(leadRows.map((l) => [l.id, l]));
+  const buyable = leadRows.filter((l) => l.netProfit > 4 && l.roiPct >= 20).sort((a, b) => b.score - a.score);
+  // Guarantee learning-health coverage: pipeline purchases get outcomes first
+  // (PURCHASED items keep theirs pending so the mobile prompt list has content).
+  const pipelineRows = await db.pipelineItem.findMany({ select: { leadId: true, status: true } });
+  const coveredLeads = pipelineRows.filter((p) => ['SHIPPED', 'LIVE', 'WON', 'LOST'].includes(p.status)).map((p) => p.leadId);
+  const pendingLeadIds = new Set(pipelineRows.filter((p) => ['PURCHASED', 'SHIPPED', 'LIVE'].includes(p.status)).map((p) => p.leadId));
+  const outcomePlan: string[] = [...coveredLeads];
+  const pendingReserve: string[] = pipelineRows.filter((p) => p.status === 'PURCHASED').map((p) => p.leadId).slice(0, 3); // left without outcomes → prompts
+  for (let i = 0; i < nOutcomes; i++) {
+    const idx = Math.floor(Math.pow(Math.random(), 1.6) * buyable.length); // front-biased
+    const lead = buyable[idx];
+    if (pendingReserve.includes(lead.id) || pendingLeadIds.has(lead.id)) continue; // keep prompts pending
+    outcomePlan.push(lead.id);
+  }
+  for (let i = 0; i < outcomePlan.length; i++) {
+    const lead = leadById.get(outcomePlan[i])!;
+    const type = outcomeTypes[Math.floor(Math.random() * outcomeTypes.length)];
+    const units = type === 'MULTI_UNIT' ? 3 + Math.floor(Math.random() * 4) : 1;
+    const unitsSold = type === 'RETURNED' || type === 'CANCELLED' ? 0 : type === 'PARTIAL' ? 1 : units;
+    const unitsReturned = type === 'RETURNED' ? units : type === 'PARTIAL' ? 0 : 0;
+    // Win probability correlates with the platform score (a real, learnable
+    // signal): score 85 → ~78%, score 40 → ~55%. Losers misprice or stall.
+    const winner = Math.random() < 0.3 + (lead.score / 100) * 0.6;
+    const revenueFactor = type === 'CANCELLED' ? 0 : winner ? 0.96 + Math.random() * 0.1 : 0.5 + Math.random() * 0.25;
+    const revenue = round2(unitsSold * lead.buyBox * revenueFactor);
+    const cost = round2(units * lead.totalCost);
+    const netProfit = type === 'CANCELLED' ? 0 : round2(revenue - cost);
+    const roiPct = cost > 0 ? round2((netProfit / cost) * 100) : 0;
+    const createdAt = new Date(now - Math.random() * 30 * 24 * HOURS);
+    const actor = ['Sofia', 'Sofia', 'Marcus', 'Priya (VA)'][Math.floor(Math.random() * 4)];
+    await db.outcome.create({
+      data: {
+        leadId: lead.id,
+        type,
+        units,
+        unitsSold,
+        unitsReturned,
+        revenue,
+        cost,
+        netProfit,
+        roiPct,
+        win: netProfit > 0 && roiPct >= 15,
+        imputed: Math.random() < 0.14,
+        actor,
+        actorRole: actor === 'Priya (VA)' ? 'VA' : actor === 'Marcus' ? 'MANAGER' : 'OWNER',
+        createdAt,
+      },
+    });
+    if (i % 8 === 0) {
+      await db.auditEvent.create({
+        data: {
+          actor,
+          actorRole: actor === 'Priya (VA)' ? 'VA' : actor === 'Marcus' ? 'MANAGER' : 'OWNER',
+          action: 'OUTCOME',
+          targetType: 'lead',
+          targetId: lead.id,
+          detailJson: JSON.stringify({ type, units, netProfit }),
+          createdAt,
+        },
+      });
+    }
+  }
+
+  // One permanent suppression example (taxonomy demo) on a real brand.
+  const brandCounts = new Map<string, number>();
+  for (const l of leadRows) brandCounts.set(l.brand, (brandCounts.get(l.brand) ?? 0) + 1);
+  const brandList = Array.from(brandCounts.entries()).sort((a, b) => b[1] - a[1]);
+  const suppressBrand = brandList[Math.floor(brandList.length * 0.35)]?.[0] ?? brandList[0][0];
+  await db.suppression.create({
+    data: { scope: 'BRAND', value: suppressBrand, reason: 'Two IP-claim near-misses last quarter — never show this brand again.', actor: 'Sofia', createdAt: new Date(now - 12 * 24 * HOURS) },
+  });
+  await db.auditEvent.create({
+    data: { actor: 'Sofia', actorRole: 'OWNER', action: 'SUPPRESS', targetType: 'suppression', targetId: suppressBrand, detailJson: JSON.stringify({ scope: 'BRAND', value: suppressBrand }), createdAt: new Date(now - 12 * 24 * HOURS) },
+  });
+
+  // Notifications with deep links (US-6 preview; fresh NEW_PICKs generate on first ranking pass).
+  const hotLead = [...leadRows].sort((a, b) => b.score - a.score)[0];
+  const flaggedLead = leadRows.find((l) => l.riskFlags.includes('GATED')) ?? hotLead;
+  const notifications = [
+    { kind: 'NEW_PICK', title: `Top pick: $${round2(hotLead.netProfit).toFixed(2)} profit · ${Math.round(hotLead.roiPct)}% ROI`, body: `High-confidence buy: ${hotLead.asin} verified fresh at ${hotLead.retailerName}.`, leadId: hotLead.id, agoH: 2 },
+    { kind: 'RISK_ALERT', title: 'Account health watch: gated purchase logged', body: `A recent purchase sits on gated listing ${flaggedLead.asin} — ungate or suppress the pattern to protect the account.`, leadId: null, agoH: 9 },
+    { kind: 'PRICE_DROP', title: 'Watch-list price drop', body: `A saved scan lead dropped 12% at ${hotLead.retailerName} — now above your ROI floor.`, leadId: null, agoH: 26 },
+  ];
+  for (const n of notifications) {
+    await db.notification.create({
+      data: { kind: n.kind, title: n.title, body: n.body, leadId: n.leadId, deepLink: n.leadId ? `/?deal=${n.leadId}` : null, channel: 'push', createdAt: new Date(now - n.agoH * HOURS) },
+    });
+  }
+
+  // ---- ops & care (Admin Console fleet + Customer Care tickets) ----
+  const opsCare = await seedOpsAndCare();
+  // ---- BuyWise consumer module demo (TA-PRD-SHOP-1.0) ----
+  const shop = await seedShopDemo();
+
   return {
     retailers: retailerRows.length,
     listings: listingRows.length,
     products: products.length,
     leads: leadCount,
+    outcomes: nOutcomes,
+    ...opsCare,
   };
 }

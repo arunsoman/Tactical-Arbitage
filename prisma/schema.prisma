@@ -26,6 +26,7 @@ model Retailer {
 
   products RetailerProduct[]
   scanJobs ScanJob[]
+  connectors Connector[]
 }
 
 model AmazonListing {
@@ -153,6 +154,8 @@ model Lead {
   lastVerifiedAt     DateTime
 
   pipeline PipelineItem?
+  outcomes Outcome[]
+  supportTickets SupportTicket[]
 
   @@index([category])
   @@index([roiPct])
@@ -228,6 +231,10 @@ model Settings {
   monthlyBudget      Float    @default(2000)
   excludedBrands     String   @default("[]")
   excludedAsins      String   @default("[]")
+  // AI-first v2.2 additions
+  riskTolerance      String   @default("balanced") // conservative | balanced | aggressive
+  preferredCategories String  @default("[]") // JSON string[]
+  theme              String   @default("dark") // dark | light
   updatedAt          DateTime @updatedAt
 }
 
@@ -239,4 +246,412 @@ model ActivityEvent {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// AI-First v2.2 — outcome learning, trust, team, notifications, evaluation
+// ---------------------------------------------------------------------------
+
+// Outcome capture (§5): bought / returned / partial / multi-unit / cancelled.
+// Clean outcome capture is non-negotiable — this is the learning loop's label source.
+model Outcome {
+  id            String   @id @default(cuid())
+  leadId        String
+  type          String // BOUGHT | RETURNED | PARTIAL | MULTI_UNIT | CANCELLED
+  units         Int      @default(1)
+  unitsSold     Int      @default(0)
+  unitsReturned Int      @default(0)
+  revenue       Float    @default(0) // realized sell-through revenue
+  cost          Float    @default(0) // realized landed cost
+  netProfit     Float    @default(0) // realized net
+  roiPct        Float    @default(0)
+  win           Boolean  @default(false) // realized ROI met/beat expectation
+  imputed       Boolean  @default(false) // prompt+impute with confidence flag (§5)
+  note          String?
+  actor         String   @default("Sofia")
+  actorRole     String   @default("OWNER") // OWNER | MANAGER | VA
+  createdAt     DateTime @default(now())
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+// Permanent suppression taxonomy (§5): brand, category, retailer, ASIN, IP, return, gating.
+model Suppression {
+  id        String   @id @default(cuid())
+  scope     String // BRAND | CATEGORY | RETAILER | ASIN | IP | RETURN | GATING
+  value     String
+  reason    String?
+  actor     String   @default("Sofia")
+  createdAt DateTime @default(now())
+
+  @@unique([scope, value])
+}
+
+// Immutable audit events (§5) — append-only, never updated or deleted.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actor      String
+  actorRole  String // OWNER | MANAGER | VA | SYSTEM
+  action     String // OVERRIDE | DISPUTE | SUPPRESS | UNSUPPRESS | OUTCOME | PIPELINE_MOVE | PLAN_CHANGE | SETTINGS | APPROVE | REJECT | ONBOARD
+  targetType String
+  targetId   String
+  detailJson String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Disputes against a pick/recommendation (human control first).
+model Dispute {
+  id         String   @id @default(cuid())
+  leadId     String
+  reason     String
+  status     String   @default("OPEN") // OPEN | RESOLVED
+  resolution String?
+  actor      String   @default("Sofia")
+  createdAt  DateTime @default(now())
+
+  @@index([status])
+}
+
+// Actionable notifications (US-6): one-line reason + deep link to the deal.
+model Notification {
+  id        String   @id @default(cuid())
+  kind      String // NEW_PICK | PRICE_DROP | RISK_ALERT | DRIFT_ALERT | APPROVAL
+  title     String
+  body      String // one-line evidence-linked reason
+  leadId    String?
+  deepLink  String? // "/?deal=<leadId>"
+  channel   String   @default("push") // push | telegram | email
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read])
+  @@index([createdAt])
+}
+
+// VA / team roles (§5): Owner, Manager, VA with approval workflows.
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  role      String // OWNER | MANAGER | VA
+  email     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// Approval workflow: VA-initiated buys / suppressions above thresholds need
+// Manager or Owner sign-off before execution.
+model ApprovalRequest {
+  id          String    @id @default(cuid())
+  kind        String // BUY | SUPPRESS
+  leadId      String?
+  payloadJson String?
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  requestedBy String
+  decidedBy   String?
+  createdAt   DateTime  @default(now())
+  decidedAt   DateTime?
+}
+
+// Device / session context for analytics (mobile vs desktop usage, §6).
+model DeviceSession {
+  id        String   @id @default(cuid())
+  device    String // mobile | desktop
+  ua        String?
+  createdAt DateTime @default(now())
+}
+
+// Latency instrumentation (§3: ranking p95 < 2s, reasoning p95 < 5s).
+model LatencySample {
+  id        String   @id @default(cuid())
+  op        String // RANK | REASON | NL
+  ms        Float
+  createdAt DateTime @default(now())
+
+  @@index([op])
+}
+
+// Offline evaluation snapshots (§5): NDCG@10, Precision@10, AI vs non-AI win rate, drift.
+model AiMetric {
+  id           String   @id @default(cuid())
+  ndcg10       Float
+  precision10  Float
+  winRateAi    Float
+  winRateNonAi Float
+  roiLiftPct   Float    @default(0)
+  sampleSize   Int
+  drift        Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+// Cached ranked-picks snapshot for instant mobile cold starts (§7).
+model PickSnapshot {
+  id          String   @id @default(cuid())
+  kind        String   @default("top")
+  payloadJson String
+  generatedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// OPS & PLATFORM ADMINISTRATION (PRD TA-PRD-OPS-1.0)
+// LLM registry + supplier connectors + gated go-live lifecycle.
+// External LLM calls and retailer crawls are SIMULATED deterministically in
+// this build; data model, gates, and audit contracts are the production shape.
+// ---------------------------------------------------------------------------
+
+// API endpoint owner (OpenAI, Anthropic, Google, custom OpenAI-compatible).
+model LlmProvider {
+  id        String      @id @default(cuid())
+  name      String
+  kind      String // openai | anthropic | google | custom
+  baseUrl   String?
+  keyMasked String? // e.g. "sk-…f9d2" — full keys are never persisted in this build
+  status    String      @default("ACTIVE") // ACTIVE | DISABLED
+  notes     String?
+  createdAt DateTime    @default(now())
+
+  models LlmModel[]
+}
+
+// Enrollable model within a provider; capability tags drive routing.
+model LlmModel {
+  id             String      @id @default(cuid())
+  providerId     String
+  provider       LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  modelId        String // e.g. gpt-4o-mini
+  label          String
+  contextK       Int         @default(128)
+  costIn         Float // $ per 1M input tokens
+  costOut        Float // $ per 1M output tokens
+  capabilities   String      @default("[]") // JSON string[]: RANK | REASON | NL | EVAL
+  tier           String      @default("FALLBACK") // PRIMARY | FALLBACK
+  enabled        Boolean     @default(false)
+  lastTestAt     DateTime?
+  lastTestStatus String? // PASS | FAIL
+  lastLatencyMs  Float?
+  createdAt      DateTime    @default(now())
+
+  testRuns LlmTestRun[]
+
+  @@unique([providerId, modelId])
+}
+
+// Append-only model probe evidence (FR-A5/A6): latency, tokens, cost, output.
+model LlmTestRun {
+  id           String   @id @default(cuid())
+  modelId      String
+  model        LlmModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  ok           Boolean
+  latencyMs    Float
+  promptTokens Int      @default(0)
+  outputTokens Int      @default(0)
+  costEst      Float    @default(0)
+  samplePrompt String
+  sampleOutput String?
+  error        String?
+  actor        String   @default("Admin")
+  createdAt    DateTime @default(now())
+}
+
+// Supplier integration unit (PRD §6): earns Retailer linkage via lifecycle gates.
+model Connector {
+  id           String             @id @default(cuid())
+  retailerId   String?
+  retailer     Retailer?          @relation(fields: [retailerId], references: [id])
+  name         String
+  adapterType  String // CRAWLER | API | RSS | MANUAL_UPLOAD
+  endpoint     String
+  authType     String             @default("NONE") // NONE | API_KEY | OAUTH | COOKIES
+  authMasked   String?
+  rateLimitRpm Int                @default(60)
+  cadenceHours Int                @default(24)
+  tier         String             @default("B")
+  status       String             @default("DRAFT") // DRAFT | TESTING | CANARY | LIVE | PAUSED | RETIRED
+  schemaOk     Boolean            @default(false)
+  healthScore  Float              @default(0) // rolling 0..100 composite
+  notes        String?
+  createdBy    String             @default("Admin")
+  createdAt    DateTime           @default(now())
+
+  testRuns ConnectorTestRun[]
+
+  @@index([status])
+}
+
+// Append-only suite evidence: CONNECTIVITY | SCHEMA | SAMPLE_CRAWL | MATCH_PROBE | FEE_CONFIG.
+model ConnectorTestRun {
+  id          String    @id @default(cuid())
+  connectorId String
+  connector   Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  kind        String
+  ok          Boolean
+  score       Float     @default(0) // 0..100 per-test score
+  itemsOk     Int       @default(0)
+  itemsTotal  Int       @default(0)
+  errorRate   Float     @default(0)
+  durationMs  Float     @default(0)
+  detailsJson String? // per-check results for the run dialog
+  error       String?
+  actor       String    @default("Admin")
+  createdAt   DateTime  @default(now())
+
+  @@index([connectorId])
+}
+
+// ---------------------------------------------------------------------------
+// CUSTOMER CARE PORTAL (PRD TA-PRD-CARE-1.0)
+// Tickets are first-class platform entities linked to the deals/retailers/
+// scans they concern; agents get a server-assembled Ticket 360 dashboard.
+// ---------------------------------------------------------------------------
+
+model SupportTicket {
+  id              String    @id @default(cuid())
+  ref             String    @unique // TKT-1001
+  customerName    String
+  customerEmail   String? // consumer shoppers (BuyWise) — arbitrage tickets use the account holder
+  customerType    String    @default("ARBITRAGE") // ARBITRAGE | CONSUMER (TA-PRD-SHOP-1.0)
+  subject         String
+  category        String // BILLING | DATA_QUALITY | CONNECTOR | AI_QUALITY | ACCOUNT | SHOPPING | FEATURE | OTHER
+  priority        String    @default("P3") // P1 | P2 | P3
+  status          String    @default("OPEN") // OPEN | IN_PROGRESS | WAITING_CUSTOMER | RESOLVED | CLOSED
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  retailerId      String?
+  scanSetId       String?
+  consumerSearchId String? // attached BuyWise search (consumer tickets)
+  consumerSearch  ConsumerSearch? @relation(fields: [consumerSearchId], references: [id])
+  assignee        String?
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  csat            Int?
+  slaBreach       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages TicketMessage[]
+  events   TicketEvent[]
+
+  @@index([status])
+  @@index([category])
+  @@index([priority])
+  @@index([customerType])
+}
+
+model TicketMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author     String
+  authorRole String // CUSTOMER | AGENT | SYSTEM
+  internal   Boolean       @default(false) // agent-only notes; excluded from customer payloads
+  body       String
+  createdAt  DateTime      @default(now())
+}
+
+// Append-only ticket timeline (PRD §6.4): never edited, actors recorded.
+model TicketEvent {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  type      String // CREATED | STATUS | ASSIGN | PRIORITY | REPLY | RESOLVE | REOPEN | CSAT | TRIAGE
+  detail    String?
+  actor     String
+  createdAt DateTime      @default(now())
+}
+
+model CannedResponse {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// BUYWISE — CONSUMER SHOPPING MODULE (PRD TA-PRD-SHOP-1.0)
+// Where-to-buy comparisons + AI buy-or-wait verdicts for regular shoppers.
+// Reuses the retailer catalog, price-history engine, and the LLM registry
+// (SHOP capability). No resale vocabulary or features in this module.
+// ---------------------------------------------------------------------------
+
+// One completed consumer analysis — the history row AND the care-360 context.
+// Verdict snapshot is denormalized so history views never recompute (§10).
+model ConsumerSearch {
+  id              String   @id @default(cuid())
+  query           String // original shopper text
+  productName     String
+  brand           String
+  category        String
+  imageUrl        String // deterministic placeholder key
+  msrp            Float // reference list price
+  verdict         String // BUY_NOW | BUY | WAIT
+  confidence      Float // 0..100
+  buyReasonsJson  String // JSON string[]
+  waitReasonsJson String // JSON string[] — always non-empty (dual-ledger rule §7.2)
+  narrative       String // plain-language AI paragraph
+  engineLabel     String // e.g. "gpt-4o-mini via OpenAI" or "TA Intelligence (built-in)"
+  fairPercentile  Float // best total position in 90d band, 0..100 (lower = cheaper)
+  trendPct        Float // product-level 30d trend, negative = falling
+  saleInDays      Int? // deterministic seasonal-sale proximity factor
+  bestVendor      String
+  bestTotal       Float
+  worstTotal      Float
+  priceLow90      Float
+  priceHigh90     Float
+  durationMs      Int
+  customerEmail   String? // voluntary email scope for history + watch + care
+  createdAt       DateTime @default(now())
+
+  quotes  VendorQuote[]
+  watches WatchItem[]
+  tickets SupportTicket[]
+
+  @@index([customerEmail])
+  @@index([createdAt])
+}
+
+// One vendor offer inside a search snapshot (§6.2).
+model VendorQuote {
+  id             String         @id @default(cuid())
+  searchId       String
+  search         ConsumerSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  vendor         String
+  vendorType     String // RETAILER | MARKETPLACE
+  tier           String? // A | B | C for retailers
+  price          Float
+  shipping       Float
+  tax            Float
+  total          Float
+  listPrice      Float
+  discountPct    Float
+  inStock        Boolean        @default(true)
+  stockLeft      Int?
+  etaDays        Int
+  rating         Float
+  reviews        Int
+  returnDays     Int
+  warrantyMonths Int
+  couponText     String?
+  trendPct       Float // vendor's own 30d trend
+  url            String?
+  badgesJson     String // JSON string[]: LOWEST_TOTAL | FASTEST | BEST_RETURNS | TRUSTED | COUPON
+  historyJson    String // 90d {d,p} series for the sparkline
+
+  @@index([searchId])
+}
+
+// Price watch (§6.4): email-scoped, target-price alerts.
+model WatchItem {
+  id          String         @id @default(cuid())
+  searchId    String
+  search      ConsumerSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  email       String
+  targetPrice Float
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+
+  @@index([email])
+  @@index([searchId])
 }

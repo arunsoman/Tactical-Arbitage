@@ -1,12 +1,28 @@
 'use client';
 
-// Global app store: active view, bootstrap data, deal filters, lead selection.
+// Global app store: active view, bootstrap data, deal filters, lead selection,
+// and v2.2 AI-first view/deep-link state.
 
 import { create } from 'zustand';
 import { DEFAULT_FILTERS, type LeadFilters } from '@/lib/ta/types';
 import type { BootstrapDTO, SettingsDTO } from '@/lib/ta/api';
 
-export type View = 'dashboard' | 'deals' | 'scans' | 'pipeline' | 'retailers' | 'billing' | 'settings';
+export type View =
+  | 'picks' // AI Picks — default home (§10)
+  | 'search' // natural-language deal search (US-5)
+  | 'dashboard'
+  | 'deals'
+  | 'scans'
+  | 'pipeline'
+  | 'alerts'
+  | 'retailers'
+  | 'team'
+  | 'ai'
+  | 'billing'
+  | 'settings'
+  | 'ops' // Ops & Platform Administration (PRD TA-PRD-OPS-1.0)
+  | 'care' // Care Console — agent queue + Ticket 360 (PRD TA-PRD-CARE-1.0)
+  | 'support'; // Help & Support — customer face of the care portal
 
 /** A saved scan whose results are being browsed in Deal Finder. */
 export interface ActiveScan {
@@ -44,10 +60,18 @@ interface TAState {
 
   scanning: boolean;
   setScanning: (b: boolean) => void;
+
+  // AI picks state
+  picksRefreshKey: number;
+  bumpPicksRefresh: () => void;
+
+  // v2.2 mobile detail sheet payload (deal deep links land here)
+  deepLinkLeadId: string | null;
+  setDeepLinkLeadId: (id: string | null) => void;
 }
 
 export const useTAStore = create<TAState>((set) => ({
-  view: 'dashboard',
+  view: 'picks',
   setView: (v) => set({ view: v }),
 
   bootstrap: null,
@@ -73,4 +97,10 @@ export const useTAStore = create<TAState>((set) => ({
 
   scanning: false,
   setScanning: (b) => set({ scanning: b }),
+
+  picksRefreshKey: 0,
+  bumpPicksRefresh: () => set((st) => ({ picksRefreshKey: st.picksRefreshKey + 1 })),
+
+  deepLinkLeadId: null,
+  setDeepLinkLeadId: (id) => set({ deepLinkLeadId: id }),
 }));

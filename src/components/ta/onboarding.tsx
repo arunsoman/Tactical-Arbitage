@@ -33,10 +33,17 @@ const BUDGETS = [
   { id: 50000, label: '$25k+/mo', note: 'Multi-market operations' },
 ];
 
+const RISK_LEVELS = [
+  { id: 'conservative', label: 'Conservative', note: 'Proven brands only, no flagged risk — safe mode picks' },
+  { id: 'balanced', label: 'Balanced', note: 'Solid ROI with some flagged risk surfaced — recommended' },
+  { id: 'aggressive', label: 'Aggressive', note: 'Wider funnel, more candidates, higher variance' },
+];
+
 export function OnboardingWizard({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
   const [marketplace, setMarketplace] = useState('US');
   const [budget, setBudget] = useState(2000);
+  const [riskTolerance, setRiskTolerance] = useState('balanced');
   const [categories, setCategories] = useState<string[]>(['Health & Household', 'Grocery & Gourmet']);
   const [minRoi, setMinRoi] = useState(30);
   const [minProfit, setMinProfit] = useState(5);
@@ -50,7 +57,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
     setBusy(true);
     try {
       if (!skip) {
-        await api.updateSettings({ onboarded: true, marketplace, monthlyBudget: budget, minRoi, minProfit });
+        await api.updateSettings({ onboarded: true, marketplace, monthlyBudget: budget, minRoi, minProfit, riskTolerance, preferredCategories: categories });
         // replace seeded defaults with the user's calibrated scan templates
         const existing = await api.scanSets();
         const defaultNames = ['Clearance Health & Beauty', 'Toys deal feed', 'Grocery monthly deals'];
@@ -87,7 +94,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
     }
   };
 
-  const steps = ['Marketplace', 'Budget', 'Categories', 'Profit floor'];
+  const steps = ['Marketplace', 'Budget', 'Risk profile', 'Categories', 'Profit floor'];
 
   return (
     <Dialog open onOpenChange={() => undefined}>
@@ -101,12 +108,13 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
           <DialogDescription id="onboarding-desc">
             {step === 0 && 'Four quick answers and your first profitable leads will be waiting — typically under 10 minutes (G4).'}
             {step === 1 && 'How much inventory do you buy per month? This tunes scan depth and default filters.'}
-            {step === 2 && 'Pick the categories your scans should watch. You can change these anytime.'}
-            {step === 3 && 'The minimum deal quality you want surfaced. We compute breakeven from this (FR-3.5).'}
+            {step === 2 && 'Your risk profile shapes safe-mode thresholds and how aggressively AI Picks rank flagged deals.'}
+            {step === 3 && 'Pick the categories your scans should watch. You can change these anytime.'}
+            {step === 4 && 'The minimum deal quality you want surfaced. We compute breakeven from this (FR-3.5).'}
           </DialogDescription>
         </DialogHeader>
 
-        <Progress value={((step + 1) / 4) * 100} className="h-1.5" />
+        <Progress value={((step + 1) / 5) * 100} className="h-1.5" />
 
         <div className="min-h-[240px] py-2">
           {step === 0 && (
@@ -150,6 +158,26 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
           )}
 
           {step === 2 && (
+            <RadioGroup value={riskTolerance} onValueChange={setRiskTolerance} className="grid gap-2">
+              {RISK_LEVELS.map((r) => (
+                <Label
+                  key={r.id}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50',
+                    riskTolerance === r.id && 'border-emerald-500 bg-emerald-50/60'
+                  )}
+                >
+                  <RadioGroupItem value={r.id} />
+                  <div>
+                    <p className="text-sm font-semibold">{r.label}</p>
+                    <p className="text-xs text-slate-500">{r.note}</p>
+                  </div>
+                </Label>
+              ))}
+            </RadioGroup>
+          )}
+
+          {step === 3 && (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {allCats.map((c) => (
                 <Label
@@ -169,7 +197,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-6 pt-2">
               <div>
                 <div className="mb-2 flex items-center justify-between">
@@ -204,11 +232,11 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                 Back
               </Button>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <Button
                 size="sm"
                 onClick={() => setStep((s) => s + 1)}
-                disabled={step === 2 && categories.length === 0}
+                disabled={step === 3 && categories.length === 0}
                 className="bg-emerald-600 hover:bg-emerald-500"
               >
                 Continue

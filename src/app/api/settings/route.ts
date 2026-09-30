@@ -25,6 +25,9 @@ const ALLOWED = new Set([
   'monthlyBudget',
   'excludedBrands',
   'excludedAsins',
+  'riskTolerance',
+  'preferredCategories',
+  'theme',
 ]);
 
 export async function PATCH(req: NextRequest) {
@@ -32,7 +35,7 @@ export async function PATCH(req: NextRequest) {
   const data: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body ?? {})) {
     if (!ALLOWED.has(k)) continue;
-    if (k === 'excludedBrands' || k === 'excludedAsins') {
+    if (k === 'excludedBrands' || k === 'excludedAsins' || k === 'preferredCategories') {
       data[k] = JSON.stringify(Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []);
     } else if (k === 'onboarded' || k === 'excludeAmazonRetail') {
       data[k] = Boolean(v);

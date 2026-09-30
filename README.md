@@ -1,10 +1,57 @@
-# Tactical Arbitrage (TA) — OA Sourcing Platform
+# Tactical Arbitrage (TA) — AI-First, Mobile-First OA Sourcing Platform
 
-Web-based product-sourcing platform for **online arbitrage (OA) sellers**, built from PRD Draft v2.3 (For Engineering Review). It implements the core value loop:
+Web-based product-sourcing platform for **online arbitrage (OA) sellers**, built from
+**PRD v2.2 (AI-First, Mobile-First)** — which supersedes the earlier engineering-review
+draft. It implements the core value loop:
 
-> **Scan → Match → Calculate → Filter → Act**
+> **Scan → Match → Calculate → Filter → AI-Rank → Act**
 
-— continuously "scans" a network of 67 real US retail sites (Walmart, Best Buy, Target, Costco, Home Depot, Chewy, Walgreens, CVS, Staples, …), matches retailer products to a fictional-but-realistic Amazon catalog, computes **true net profit** after all Amazon fees, filters leads by user-defined criteria, and drives a full action pipeline (New → Interested → Purchased → Shipped → Live → Won/Lost).
+— continuously "scans" a network of 67 real US retail sites (Walmart, Best Buy, Target,
+Costco, Home Depot, Chewy, Walgreens, CVS, Staples, …), matches retailer products to a
+fictional-but-realistic Amazon catalog, computes **true net profit** after all Amazon
+fees, then an **evidence-linked AI layer** ranks, explains, and learns from every outcome.
+
+## What v2.2 adds (AI-first + mobile-first)
+
+| PRD v2.2 | Feature | Where |
+|---|---|---|
+| §4 US-1/US-2 | **AI Picks** default home: thumb-scrollable ranked cards, one-line evidence reason always visible, key numbers up top | `src/components/ta/picks-view.tsx`, `pick-card.tsx` |
+| §4 US-2/US-3 | **Deal Detail**: single-column mobile sheet, progressive disclosure (one-line reason → full evidence chain), sticky bottom CTA bar, fee breakdown, 90-day history + breakeven line | `src/components/ta/deal-detail-sheet.tsx` |
+| §1/§5 | **Calibrated confidence**: win probability maps to observed outcome rates (Laplace-smoothed bins, global-prior cold start, shrinkage for sparse bins) | `src/lib/ta/ai/ranking.ts` |
+| §1 | **Evidence-linked reasons**: every claim traces to data (profit ÷ landed cost, 30-day price position, BSR demand est., personalization record) — no black box | `ranking.ts → buildReasons` |
+| §4 US-5 | **NL deal search**: deterministic grammar (category, price, ROI, confidence, recency, brand, retailer, BSR, flags, sort), voice input (Web Speech API), context-carrying refinements, honest `unmatched` chips | `src/lib/ta/ai/nl.ts`, `search-view.tsx`, `use-voice.ts` |
+| §4 US-4/§5 | **Trust & override**: dispute, override, permanent suppression (brand/category/retailer/ASIN/IP/return/gating), large touch targets, immutable audit trail | `trust-sheet.tsx`, `/api/trust`, `/api/audit` |
+| §5 | **Outcome capture**: bought/returned/partial/multi-unit/cancelled, mobile quick-entry with smart defaults, imputed flag, pending prompts; pipeline state syncs from outcomes | `outcome-sheet.tsx`, `/api/outcomes` |
+| §5 | **Learning loop**: outcomes → calibration + category personalization (gated 20–30 weak / 100+ strong) + account health | `ai/ranking.ts`, `ai/health.ts` |
+| §5 | **Account health > ROI**: predictive score with visible reasons, enforcement ladder (IP → gated/hazmat exclusions → forced safe mode), suppression suggestions | `ai/health.ts` |
+| §4 US-6/§7 | **Notifications**: reason + deep link (`/?deal=<id>`), mobile sheet lands directly on reasoning; snapshot cache for instant cold starts, stale fallback | `ai/picks.ts`, `alerts-view.tsx` |
+| §5 | **Online evaluation**: NDCG@10, Precision@10, AI vs non-AI win rate, ROI lift, drift alerts with fire-once notifications | `ai/eval.ts`, `ai-status-view.tsx` |
+| §3/§5 | **Latency & cost instrumentation**: rank/reason/NL p95 vs PRD budgets (2s/5s), cost per recommendation, tiered-model note | `ai/instrument.ts`, `ai-status-view.tsx` |
+| §5 | **VA / Team**: Owner/Manager/VA roles, approval workflow (VA suppressions & buys need sign-off), immutable audit trail, mobile-first | `team-view.tsx`, `/api/team`, `/api/approvals` |
+| §10 | **Mobile-first shell**: bottom tab bar (Picks/Ask/Pipeline/Alerts/More), ≥44pt touch targets, safe-area insets, 320px fluid, no horizontal scroll | `ta-app.tsx` |
+| §10 | **Dark mode from day one** (default) + light theme, persisted per settings | `globals.css`, `theme-provider.tsx` |
+
+## What v1.0 adds (Ops & Customer Care — separate PRDs)
+
+| PRD | Feature | Where |
+|---|---|---|
+| TA-PRD-OPS-1.0 §5 | **LLM Registry**: providers with masked-only key capture, model enrollment (capabilities RANK/REASON/NL/EVAL, PRIMARY/FALLBACK tiers, $/1M token prices), capability routing chains, capability-appropriate connection probes with latency/cost evidence, re-test staleness badges | `src/lib/ta/ops.ts`, `ops-view.tsx`, `/api/ops/llms/*` |
+| TA-PRD-OPS-1.0 §6 | **Supplier connectors**: registry (adapter/endpoint/auth/rate-limit/cadence), five-test suite (CONNECTIVITY, SCHEMA, SAMPLE_CRAWL, MATCH_PROBE, FEE_CONFIG) with per-check details, gated lifecycle DRAFT→TESTING→CANARY→LIVE (+PAUSED/RETIRED), server-side gate engine (24h validity, error-rate + canary-health thresholds), promotion dialog with live pass/fail checklist, LIVE side effects on the linked Retailer, pause/retire with rollback | `/api/ops/connectors/*`, `ops-view.tsx` |
+| TA-PRD-OPS-1.0 §7 | **Ops Overview**: system KPIs (deal store, fresh %, scan success, rank/reason p95 vs 2s/5s budgets), connector SLA board, LLM fleet health + probe spend, recent ops activity, append-only admin audit trail | `/api/ops/overview`, `ops-view.tsx` |
+| TA-PRD-CARE-1.0 §5 | **Customer support (mobile-first)**: categorized ticket creation with deal/retailer entity attachment, My Tickets, plain-language SLA expectations, thread replies, reopen within window, 1–5 CSAT rating | `support-view.tsx`, `/api/care/tickets` |
+| TA-PRD-CARE-1.0 §6 | **Care Console + Ticket 360**: SLA-urgency queue (breach-first sort, filters), and per-ticket server-assembled dashboard — customer profile (plan/billing/health), usage footprint (leads/scans/pipeline/outcomes/AI win rate), referenced deal with FULL fee economics + 90-day range + "open in Deal Finder", past tickets, event timeline, thread with internal notes (never shown to customers) + canned responses | `care-view.tsx`, `/api/care/tickets/[id]` |
+| TA-PRD-CARE-1.0 §6.4–7 | **Workflow & automation**: status machine (OPEN→IN_PROGRESS→WAITING_CUSTOMER→RESOLVED→CLOSED) with transition validation, P1/P2/P3 SLA policy (1h/4h/12h FRT) with breach flags + escalation chips, deterministic auto-triage (keyword severity → priority escalation), LLM draft-reply hook reserved for the Ops registry | `src/lib/ta/care.ts`, care API routes |
+
+## What TA-PRD-SHOP-1.0 adds (BuyWise — consumer shopping module)
+
+| PRD | Feature | Where |
+|---|---|---|
+| §5 | **Portal architecture**: four surfaces from one route — Arbitrage suite (default landing), BuyWise shop (`/?portal=shop`), Ops + Care consoles; theme-agnostic portal launcher in every chrome | `src/app/page.tsx`, `src/components/portal-launcher.tsx` |
+| §6.1–6.2 | **Where-to-buy engine**: free-text product resolution over the existing listing pool (template-synthesis fallback), vendor quotes from the same 67-retailer network + marketplace sellers — totals incl. shipping/tax/coupons, stock, ETA, ratings, returns, warranty, per-vendor 90-day series, computed badges (Lowest total / Fastest / Best returns / Trusted) | `src/lib/ta/shop.ts`, `/api/shop/*` |
+| §7 | **Buy-or-wait verdict**: deterministic factor ledger → BUY NOW / BUY / WAIT with calibrated confidence, **dual reasons always shown for both sides**, fair-price meter (90d percentile), savings ticker, seasonal-sale factor; narrative enriched via the LLM registry's new **SHOP capability** with 4.5s timeout + honest built-in fallback — verdicts never depend on the model | `src/lib/ta/shop.ts`, `ops.ts`, `shop-app.tsx` |
+| §6.4–6.5 | **Watch & history**: email-scoped price watches with target-vs-current progress, capped analysis history with one-click re-open and quote refresh | `/api/shop/watch/*`, `shop-app.tsx` |
+| §9 | **Care ×2 audiences**: CONSUMER tickets with SHOPPING category + consumer triage keywords; shared queue gains customer-type filters; Ticket 360 gains shopper profile, shopping footprint, and the referenced comparison exactly as the customer saw it (top quotes table + verdict + narrative) | `care.ts`, `/api/care/*`, `care-view.tsx`, shop Help |
+| §12 | **Distinct consumer UX**: light warm design (violet/amber), verdict hero + confidence ring, expandable vendor rows with sparklines and trust strips, honest demo banner, no-resale-vocabulary guarantee, mobile-first (44px targets, no h-scroll at 390px) | `src/components/shop/shop-app.tsx` |
 
 ---
 
