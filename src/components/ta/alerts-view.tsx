@@ -17,7 +17,7 @@ const KIND_META: Record<string, { icon: typeof Zap; className: string }> = {
   RISK_ALERT: { icon: ShieldAlert, className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
   PRICE_DROP: { icon: TrendingDown, className: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },
   DRIFT_ALERT: { icon: Zap, className: 'bg-red-500/15 text-red-600 dark:text-red-400' },
-  APPROVAL: { icon: UserCheck, className: 'bg-violet-500/15 text-violet-600 dark:text-violet-400' },
+  APPROVAL: { icon: UserCheck, className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
 };
 
 export function AlertsView() {

@@ -123,14 +123,14 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                 <Label
                   key={m.id}
                   className={cn(
-                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50',
+                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent',
                     marketplace === m.id && 'border-emerald-500 bg-emerald-50/60'
                   )}
                 >
                   <RadioGroupItem value={m.id} />
                   <div>
                     <p className="text-sm font-semibold">{m.label}</p>
-                    <p className="text-xs text-slate-500">{m.note}</p>
+                    <p className="text-xs text-muted-foreground">{m.note}</p>
                   </div>
                 </Label>
               ))}
@@ -143,14 +143,14 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                 <Label
                   key={b.id}
                   className={cn(
-                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50',
+                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent',
                     budget === b.id && 'border-emerald-500 bg-emerald-50/60'
                   )}
                 >
                   <RadioGroupItem value={String(b.id)} />
                   <div>
                     <p className="text-sm font-semibold">{b.label}</p>
-                    <p className="text-xs text-slate-500">{b.note}</p>
+                    <p className="text-xs text-muted-foreground">{b.note}</p>
                   </div>
                 </Label>
               ))}
@@ -163,14 +163,14 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                 <Label
                   key={r.id}
                   className={cn(
-                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50',
+                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent',
                     riskTolerance === r.id && 'border-emerald-500 bg-emerald-50/60'
                   )}
                 >
                   <RadioGroupItem value={r.id} />
                   <div>
                     <p className="text-sm font-semibold">{r.label}</p>
-                    <p className="text-xs text-slate-500">{r.note}</p>
+                    <p className="text-xs text-muted-foreground">{r.note}</p>
                   </div>
                 </Label>
               ))}
@@ -183,7 +183,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                 <Label
                   key={c}
                   className={cn(
-                    'flex cursor-pointer items-center gap-2.5 rounded-lg border p-2.5 text-sm transition-colors hover:bg-slate-50',
+                    'flex cursor-pointer items-center gap-2.5 rounded-lg border p-2.5 text-sm transition-colors hover:bg-accent',
                     categories.includes(c) && 'border-emerald-500 bg-emerald-50/60'
                   )}
                 >
@@ -205,7 +205,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                   <span className="font-mono text-sm font-bold text-emerald-700">{minRoi}%</span>
                 </div>
                 <Slider value={[minRoi]} onValueChange={(v) => setMinRoi(v[0])} min={10} max={80} step={5} />
-                <p className="mt-1 text-xs text-slate-500">Profit ÷ landed cost. 30% is the common OA floor.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Profit ÷ landed cost. 30% is the common OA floor.</p>
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between">
@@ -213,9 +213,9 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
                   <span className="font-mono text-sm font-bold text-emerald-700">${minProfit}</span>
                 </div>
                 <Slider value={[minProfit]} onValueChange={(v) => setMinProfit(v[0])} min={1} max={25} step={1} />
-                <p className="mt-1 text-xs text-slate-500">Filters out high-ROI-but-tiny-dollar flips.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Filters out high-ROI-but-tiny-dollar flips.</p>
               </div>
-              <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+              <div className="rounded-lg bg-secondary p-3 text-xs text-foreground/80">
                 Your default filter becomes: <b>ROI ≥ {minRoi}%</b>, <b>profit ≥ ${minProfit}</b>. All 3 scan templates start from this floor.
               </div>
             </div>
@@ -223,7 +223,7 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
         </div>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
-          <Button variant="ghost" size="sm" onClick={() => finish(true)} disabled={busy} className="text-slate-500">
+          <Button variant="ghost" size="sm" onClick={() => finish(true)} disabled={busy} className="text-muted-foreground">
             Skip setup
           </Button>
           <div className="flex gap-2">

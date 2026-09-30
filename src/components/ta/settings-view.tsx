@@ -118,14 +118,14 @@ export function SettingsView() {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <div className="space-y-4">
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-slate-800">Sourcing defaults</CardTitle>
+            <CardTitle className="text-sm font-bold text-foreground">Sourcing defaults</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Marketplace</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Marketplace</Label>
                 <Select value={form.marketplace ?? 'US'} onValueChange={(v) => setForm((f) => ({ ...f, marketplace: v }))}>
                   <SelectTrigger className="mt-1 h-9 text-xs">
                     <SelectValue />
@@ -139,7 +139,7 @@ export function SettingsView() {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Sourcing state (FR-3.3)</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Sourcing state (FR-3.3)</Label>
                 <Select value={form.sourcingState ?? 'MT'} onValueChange={(v) => setForm((f) => ({ ...f, sourcingState: v }))}>
                   <SelectTrigger className="mt-1 h-9 text-xs">
                     <SelectValue />
@@ -154,19 +154,19 @@ export function SettingsView() {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Min ROI %</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Min ROI %</Label>
                 <Input className="mt-1 h-9" type="number" value={form.minRoi ?? ''} onChange={(e) => setForm((f) => ({ ...f, minRoi: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Min profit $</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Min profit $</Label>
                 <Input className="mt-1 h-9" type="number" value={form.minProfit ?? ''} onChange={(e) => setForm((f) => ({ ...f, minProfit: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Max BSR</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Max BSR</Label>
                 <Input className="mt-1 h-9" type="number" value={form.maxBsr ?? ''} onChange={(e) => setForm((f) => ({ ...f, maxBsr: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Monthly buy budget</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Monthly buy budget</Label>
                 <Input className="mt-1 h-9" type="number" value={form.monthlyBudget ?? ''} onChange={(e) => setForm((f) => ({ ...f, monthlyBudget: e.target.value }))} />
               </div>
             </div>
@@ -175,14 +175,14 @@ export function SettingsView() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Prep cost / unit</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Prep cost / unit</Label>
                 <Input className="mt-1 h-9" type="number" step="0.05" value={form.prepCost ?? ''} onChange={(e) => setForm((f) => ({ ...f, prepCost: e.target.value }))} />
-                <p className="mt-1 text-[10px] text-slate-400">Fragile items are auto-bumped to $1.20.</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">Fragile items are auto-bumped to $1.20.</p>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Inbound shipping / unit</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Inbound shipping / unit</Label>
                 <Input className="mt-1 h-9" type="number" step="0.05" value={form.inboundCost ?? ''} onChange={(e) => setForm((f) => ({ ...f, inboundCost: e.target.value }))} />
-                <p className="mt-1 text-[10px] text-slate-400">Feeds the fee engine on every recompute.</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">Feeds the fee engine on every recompute.</p>
               </div>
             </div>
 
@@ -194,15 +194,15 @@ export function SettingsView() {
       </div>
 
       <div className="space-y-4">
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-slate-800">Exclusion lists (FR-4.5)</CardTitle>
+            <CardTitle className="text-sm font-bold text-foreground">Exclusion lists (FR-4.5)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Blocked brands ({excludedBrands.length})</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Blocked brands ({excludedBrands.length})</Label>
               <div className="mt-1.5 flex max-h-24 flex-wrap gap-1 overflow-y-auto">
-                {excludedBrands.length === 0 && <p className="text-xs text-slate-400">None — add brands with IP-claim or litigation patterns.</p>}
+                {excludedBrands.length === 0 && <p className="text-xs text-muted-foreground">None — add brands with IP-claim or litigation patterns.</p>}
                 {excludedBrands.map((b) => (
                   <Badge key={b} variant="secondary" className="gap-1 bg-red-50 text-red-700 hover:bg-red-50">
                     {b}
@@ -214,9 +214,9 @@ export function SettingsView() {
               </div>
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Blocked ASINs ({excludedAsins.length})</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Blocked ASINs ({excludedAsins.length})</Label>
               <div className="mt-1.5 flex max-h-24 flex-wrap gap-1 overflow-y-auto">
-                {excludedAsins.length === 0 && <p className="text-xs text-slate-400">None — add ASINs you never want surfaced.</p>}
+                {excludedAsins.length === 0 && <p className="text-xs text-muted-foreground">None — add ASINs you never want surfaced.</p>}
                 {excludedAsins.map((a) => (
                   <Badge key={a} variant="secondary" className="gap-1 bg-red-50 text-red-700 hover:bg-red-50">
                     {a}
@@ -236,11 +236,11 @@ export function SettingsView() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-slate-800">Account</CardTitle>
+            <CardTitle className="text-sm font-bold text-foreground">Account</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-xs text-slate-600">
+          <CardContent className="space-y-3 text-xs text-foreground/80">
             <div className="flex items-center justify-between">
               <span>Plan</span>
               <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{PLANS[s.plan].name}</Badge>

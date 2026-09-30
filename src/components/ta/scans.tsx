@@ -28,7 +28,7 @@ function FiltersSummary({ f }: { f: LeadFilters }) {
   if (f.maxBsr != null) parts.push(`BSR ≤ ${f.maxBsr.toLocaleString()}`);
   if (f.excludeFlags.length) parts.push(`no ${f.excludeFlags.map((x) => RISK_FLAG_META[x as RiskFlag]?.label ?? x).join('/')}`);
   if (!f.requireFresh) parts.push('include stale');
-  return <p className="text-xs text-slate-500">{parts.length ? parts.join(' · ') : 'All categories, no thresholds'}</p>;
+  return <p className="text-xs text-muted-foreground">{parts.length ? parts.join(' · ') : 'All categories, no thresholds'}</p>;
 }
 
 export function SavedScansView() {
@@ -161,8 +161,8 @@ export function SavedScansView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Saved scans</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg font-bold text-foreground">Saved scans</h2>
+          <p className="text-xs text-muted-foreground">
             Persistent, deduplicating result feeds per scan (FR-4.3)
             {planLimit != null && ` · ${scans?.length ?? 0}/${planLimit} used on your plan`}
           </p>
@@ -183,43 +183,43 @@ export function SavedScansView() {
       {scans !== null && scans.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-            <p className="text-sm font-medium text-slate-600">No saved scans yet</p>
-            <p className="max-w-sm text-xs text-slate-400">Saved scans keep a deduplicated result feed you can open in Deal Finder.</p>
+            <p className="text-sm font-medium text-foreground/80">No saved scans yet</p>
+            <p className="max-w-sm text-xs text-muted-foreground">Saved scans keep a deduplicated result feed you can open in Deal Finder.</p>
           </CardContent>
         </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {scans?.map((s) => (
-          <Card key={s.id} className="border-slate-200 shadow-sm">
+          <Card key={s.id} className="border-border shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <CardTitle className="text-sm font-bold text-slate-800">{s.name}</CardTitle>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {SCHEDULE_LABELS[s.schedule]}{s.schedule !== 'manual' && s.active && <span className="text-slate-400"> (auto-runs while the app is open)</span>}
+                  <CardTitle className="text-sm font-bold text-foreground">{s.name}</CardTitle>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {SCHEDULE_LABELS[s.schedule]}{s.schedule !== 'manual' && s.active && <span className="text-muted-foreground"> (auto-runs while the app is open)</span>}
                     {s.lastRunAt && ` · last run ${new Date(s.lastRunAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-1.5">
                   <Switch checked={s.active} onCheckedChange={(v) => toggleActive(s, v)} aria-label={`Toggle ${s.name}`} />
                   <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => openEdit(s)} aria-label={`Edit ${s.name}`}>
-                    <Pencil className="h-3.5 w-3.5 text-slate-400" />
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
                   <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => remove(s)} aria-label={`Delete ${s.name}`}>
-                    <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
+                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-500" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-2.5">
               <FiltersSummary f={s.filters} />
-              <div className="flex flex-col gap-2 rounded-lg bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 rounded-lg bg-secondary px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs">
                   <span className="font-bold text-emerald-700">+{s.newSinceRun}</span>
-                  <span className="text-slate-500"> new since last run · </span>
-                  <span className="font-semibold text-slate-700">{s.total}</span>
-                  <span className="text-slate-500"> total in feed</span>
+                  <span className="text-muted-foreground"> new since last run · </span>
+                  <span className="font-semibold text-foreground/80">{s.total}</span>
+                  <span className="text-muted-foreground"> total in feed</span>
                 </div>
                 <div className="flex w-full gap-2 sm:w-auto">
                   <Button size="sm" variant="outline" className="h-8 flex-1 gap-1 text-[11px] sm:flex-none" onClick={() => viewResults(s)}>
@@ -236,7 +236,7 @@ export function SavedScansView() {
               {s.filters.categories.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {s.filters.categories.map((c) => (
-                    <Badge key={c} variant="secondary" className="px-1.5 py-0 text-[10px] text-slate-600">
+                    <Badge key={c} variant="secondary" className="px-1.5 py-0 text-[10px] text-foreground/80">
                       {c}
                     </Badge>
                   ))}
@@ -255,12 +255,12 @@ export function SavedScansView() {
           </DialogHeader>
           <div className="space-y-3 py-1">
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Name</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Name</Label>
               <Input className="mt-1" placeholder="e.g. Q4 toy clearance sweep" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Schedule</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Schedule</Label>
                 <Select value={schedule} onValueChange={(v) => setSchedule(v as ScanSchedule)}>
                   <SelectTrigger className="mt-1 h-9 text-xs">
                     <SelectValue />
@@ -275,15 +275,15 @@ export function SavedScansView() {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Min ROI %</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Min ROI %</Label>
                 <Input className="mt-1" type="number" value={minRoi} onChange={(e) => setMinRoi(e.target.value)} />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Min profit $</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Min profit $</Label>
                 <Input className="mt-1" type="number" placeholder="—" value={minProfit} onChange={(e) => setMinProfit(e.target.value)} />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-600">Max BSR</Label>
+                <Label className="text-xs font-semibold text-foreground/80">Max BSR</Label>
                 <Input className="mt-1" type="number" placeholder="—" value={maxBsr} onChange={(e) => setMaxBsr(e.target.value)} />
               </div>
             </div>

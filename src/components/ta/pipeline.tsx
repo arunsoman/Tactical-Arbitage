@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { cn, touchIconSize } from '@/lib/utils';
 
 const STATUS_TONE: Record<string, string> = {
-  NEW: 'bg-slate-100 text-slate-700',
+  NEW: 'bg-secondary text-foreground/80',
   INTERESTED: 'bg-amber-100 text-amber-800',
   PURCHASED: 'bg-teal-100 text-teal-800',
   SHIPPED: 'bg-lime-100 text-lime-800',
@@ -135,8 +135,8 @@ export function PipelineView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Sourcing pipeline</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg font-bold text-foreground">Sourcing pipeline</h2>
+          <p className="text-xs text-muted-foreground">
             New → Interested → Purchased → Shipped → Live → Won/Lost (FR-7.1)
             {hasRealized && (
               <>
@@ -155,9 +155,9 @@ export function PipelineView() {
         {PIPELINE_STATUSES.map((st) => {
           const n = items?.filter((i) => i.status === st).length ?? 0;
           return (
-            <Card key={st} className="border-slate-200 p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{st}</p>
-              <p className="mt-0.5 font-mono text-xl font-bold tabular-nums text-slate-800">{n}</p>
+            <Card key={st} className="border-border p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{st}</p>
+              <p className="mt-0.5 font-mono text-xl font-bold tabular-nums text-foreground">{n}</p>
             </Card>
           );
         })}
@@ -174,26 +174,26 @@ export function PipelineView() {
       {items !== null && items.length === 0 && (
         <Card className="border-dashed">
           <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <p className="text-sm font-medium text-slate-600">Pipeline is empty</p>
-            <p className="max-w-sm text-xs text-slate-400">Save leads from the Deal Finder to track them from discovery to shipped.</p>
+            <p className="text-sm font-medium text-foreground/80">Pipeline is empty</p>
+            <p className="max-w-sm text-xs text-muted-foreground">Save leads from the Deal Finder to track them from discovery to shipped.</p>
           </div>
         </Card>
       )}
 
       <div className="space-y-2">
         {visible.map((item) => (
-          <Card key={item.id} className="border-slate-200 p-3 shadow-sm transition-shadow hover:shadow-md">
+          <Card key={item.id} className="border-border p-3 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => openLead(item.lead.id)}>
                 <ProductImage imageKey={item.lead.imageUrl} title={item.lead.title} category={item.lead.category} />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">{item.lead.title}</p>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500">
-                    <span className="font-medium text-slate-600">{item.lead.retailerName}</span>
+                  <p className="truncate text-sm font-medium text-foreground">{item.lead.title}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                    <span className="font-medium text-foreground/80">{item.lead.retailerName}</span>
                     <span className="font-mono">${item.lead.retailerPrice.toFixed(2)} → ${item.lead.buyBox.toFixed(2)}</span>
                     <ProfitText value={item.lead.netProfit} className="text-xs" />
                     {item.expectedProfit != null && Math.abs(item.lead.netProfit - item.expectedProfit) >= 0.5 && (
-                      <span className="text-[10px] text-slate-400" title="Profit when you saved this lead; current profit is shown first">
+                      <span className="text-[10px] text-muted-foreground" title="Profit when you saved this lead; current profit is shown first">
                         (was ${item.expectedProfit.toFixed(2)})
                       </span>
                     )}
@@ -201,18 +201,18 @@ export function PipelineView() {
                   </div>
                   <ScanChips scans={item.lead.scans} max={2} className="mt-1" />
                   {item.unitCost != null && (
-                    <p className="mt-1 font-mono text-[10px] text-slate-500">
+                    <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                       Bought ×{item.qty} @ ${item.unitCost.toFixed(2)}
                       {item.orderNumber && ` · order ${item.orderNumber}`}
                     </p>
                   )}
-                  {item.notes && <p className="mt-1 truncate text-[11px] italic text-slate-400">“{item.notes}”</p>}
+                  {item.notes && <p className="mt-1 truncate text-[11px] italic text-muted-foreground">“{item.notes}”</p>}
                 </div>
               </button>
 
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 lg:ml-auto">
                 {item.owner !== 'Main' && (
-                  <Badge variant="outline" className="gap-1 text-[10px] text-slate-500">
+                  <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
                     <UserRound className="h-3 w-3" /> {item.owner}
                   </Badge>
                 )}
@@ -227,7 +227,7 @@ export function PipelineView() {
                   </Button>
                 )}
                 {(item.status === 'WON' || item.status === 'LOST') && (
-                  <label className="flex items-center gap-1 text-[10px] text-slate-500">
+                  <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     Actual $
                     <Input
                       type="number"
@@ -261,7 +261,7 @@ export function PipelineView() {
                   </Button>
                 )}
                 <Select value={item.status} onValueChange={(v) => setStatus(item, v)}>
-                  <SelectTrigger className="h-8 w-28 bg-white text-[11px]" aria-label="Change status">
+                  <SelectTrigger className="h-8 w-28 bg-card text-[11px]" aria-label="Change status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -273,7 +273,7 @@ export function PipelineView() {
                   </SelectContent>
                 </Select>
                 <Button size="icon" variant="ghost" className={touchIconSize} onClick={() => remove(item)} aria-label="Remove from pipeline">
-                  <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-500" />
                 </Button>
               </div>
             </div>
@@ -284,7 +284,7 @@ export function PipelineView() {
       <OutcomeSheet target={outcomeTarget} onClose={() => setOutcomeTarget(null)} onLogged={() => void load()} />
 
       {items !== null && items.length > perPage && (
-        <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {page * perPage + 1}–{Math.min((page + 1) * perPage, items.length)} of {items.length}
           </span>
@@ -308,21 +308,21 @@ export function PipelineView() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 py-1">
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Units bought</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Units bought</Label>
               <Input className="mt-1" type="number" min={1} value={pUnits} onChange={(e) => setPUnits(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Cost per unit $</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Cost per unit $</Label>
               <Input className="mt-1" type="number" step="0.01" min={0} value={pCost} onChange={(e) => setPCost(e.target.value)} />
             </div>
             <div className="col-span-2">
-              <Label className="text-xs font-semibold text-slate-600">Order number (optional)</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Order number (optional)</Label>
               <Input className="mt-1" placeholder="e.g. #112233445" value={pOrder} onChange={(e) => setPOrder(e.target.value)} />
             </div>
             {purchasing?.expectedProfit != null && purchasing.buyPrice != null && Number.isFinite(Number(pCost)) && (
-              <p className="col-span-2 text-[11px] text-slate-500">
+              <p className="col-span-2 text-[11px] text-muted-foreground">
                 Expected profit at your cost:{' '}
-                <span className="font-mono font-semibold text-slate-700">
+                <span className="font-mono font-semibold text-foreground/80">
                   ${(purchasing.expectedProfit + (purchasing.buyPrice - Number(pCost))).toFixed(2)} / unit
                 </span>{' '}
                 (was ${purchasing.expectedProfit.toFixed(2)} at the listed price)

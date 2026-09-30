@@ -141,13 +141,13 @@ export function DealFinderView() {
   return (
     <div className="flex flex-col gap-4 xl:flex-row">
       {/* ---------- filter sidebar ---------- */}
-      <Card className="w-full shrink-0 self-start border-slate-200 p-4 shadow-sm xl:sticky xl:top-[72px] xl:w-64">
+      <Card className="w-full shrink-0 self-start border-border p-4 shadow-sm xl:sticky xl:top-[72px] xl:w-64">
         <div className="flex items-center justify-between xl:mb-3">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground/80">
             <Filter className="h-3.5 w-3.5" /> Filters
             {activeFilterCount > 0 && <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{activeFilterCount}</Badge>}
           </div>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-slate-500" onClick={doReset}>
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground" onClick={doReset}>
             <RotateCcw className="mr-1 h-3 w-3" /> Reset
           </Button>
         </div>
@@ -158,15 +158,15 @@ export function DealFinderView() {
 
         <div key={filterVersion} className={cn('mt-4 space-y-4 xl:mt-0 xl:block', filtersOpen ? 'block' : 'hidden')}>
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Title, brand, ASIN, store…" className="pl-8" defaultValue={filters.search} onChange={(e) => setSearch(e.target.value)} aria-label="Search leads" />
           </div>
 
           <div>
-            <Label className="text-xs font-semibold text-slate-600">Category</Label>
-            <div className="mt-1.5 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-slate-100 p-2">
+            <Label className="text-xs font-semibold text-foreground/80">Category</Label>
+            <div className="mt-1.5 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
               {(bootstrap?.categories ?? []).map((c) => (
-                <Label key={c} className="flex cursor-pointer items-center gap-2 text-xs font-normal text-slate-700">
+                <Label key={c} className="flex cursor-pointer items-center gap-2 text-xs font-normal text-foreground/80">
                   <Checkbox checked={filters.categories.includes(c)} onCheckedChange={() => patch({ categories: toggleIn(filters.categories, c) })} />
                   {c}
                 </Label>
@@ -176,7 +176,7 @@ export function DealFinderView() {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Min ROI %</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Min ROI %</Label>
               <Input
                 type="number"
                 className="mt-1 h-8"
@@ -186,7 +186,7 @@ export function DealFinderView() {
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Min profit $</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Min profit $</Label>
               <Input
                 type="number"
                 className="mt-1 h-8"
@@ -196,25 +196,25 @@ export function DealFinderView() {
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Price min $</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Price min $</Label>
               <Input type="number" className="mt-1 h-8" placeholder="0" defaultValue={filters.minPrice ?? ''} onChange={(e) => patch({ minPrice: e.target.value === '' ? null : Number(e.target.value) })} />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Price max $</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Price max $</Label>
               <Input type="number" className="mt-1 h-8" placeholder="—" defaultValue={filters.maxPrice ?? ''} onChange={(e) => patch({ maxPrice: e.target.value === '' ? null : Number(e.target.value) })} />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Max BSR</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Max BSR</Label>
               <Input type="number" className="mt-1 h-8" placeholder="150000" defaultValue={filters.maxBsr ?? ''} onChange={(e) => patch({ maxBsr: e.target.value === '' ? null : Number(e.target.value) })} />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-600">Min discount %</Label>
+              <Label className="text-xs font-semibold text-foreground/80">Min discount %</Label>
               <Input type="number" className="mt-1 h-8" placeholder="—" defaultValue={filters.minDiscount ?? ''} onChange={(e) => patch({ minDiscount: e.target.value === '' ? null : Number(e.target.value) })} />
             </div>
           </div>
 
           <div>
-            <Label className="text-xs font-semibold text-slate-600">Amazon on listing</Label>
+            <Label className="text-xs font-semibold text-foreground/80">Amazon on listing</Label>
             <Select value={filters.amazonOnListing} onValueChange={(v) => patch({ amazonOnListing: v as LeadFilters['amazonOnListing'] })}>
               <SelectTrigger className="mt-1 h-8 text-xs">
                 <SelectValue />
@@ -228,10 +228,10 @@ export function DealFinderView() {
           </div>
 
           <div>
-            <Label className="text-xs font-semibold text-slate-600">Exclude risk flags</Label>
+            <Label className="text-xs font-semibold text-foreground/80">Exclude risk flags</Label>
             <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               {FLAG_KEYS.map((f) => (
-                <Label key={f} className="flex cursor-pointer items-center gap-1.5 text-[11px] font-normal text-slate-700">
+                <Label key={f} className="flex cursor-pointer items-center gap-1.5 text-[11px] font-normal text-foreground/80">
                   <Checkbox checked={filters.excludeFlags.includes(f)} onCheckedChange={() => patch({ excludeFlags: toggleIn(filters.excludeFlags, f) })} />
                   {RISK_FLAG_META[f].label}
                 </Label>
@@ -239,7 +239,7 @@ export function DealFinderView() {
             </div>
           </div>
 
-          <Label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
+          <Label className="flex cursor-pointer items-center gap-2 text-xs text-foreground/80">
             <Checkbox checked={filters.requireFresh} onCheckedChange={(v) => patch({ requireFresh: v === true })} />
             Fresh prices only (within site-tier SLA)
           </Label>
@@ -258,29 +258,29 @@ export function DealFinderView() {
               <div className="flex min-w-0 items-center gap-2">
                 <Radar className="h-4 w-4 shrink-0 text-emerald-600" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-800">Scan: {activeScan.name}</p>
-                  <p className="text-[11px] text-slate-500">Adjust the filters on the left, then save them back to the scan if you like the result.</p>
+                  <p className="truncate text-sm font-semibold text-foreground">Scan: {activeScan.name}</p>
+                  <p className="text-[11px] text-muted-foreground">Adjust the filters on the left, then save them back to the scan if you like the result.</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex overflow-hidden rounded-md border border-emerald-200 bg-white text-[11px] font-medium">
+                <div className="inline-flex overflow-hidden rounded-md border border-emerald-200 bg-card text-[11px] font-medium">
                   <button
-                    className={cn('px-2.5 py-1.5', newOnly ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50')}
+                    className={cn('px-2.5 py-1.5', newOnly ? 'bg-emerald-600 text-white' : 'text-foreground/80 hover:bg-accent')}
                     onClick={() => setNewOnly(true)}
                   >
                     New from last run{activeScan.newCount > 0 ? ` (${activeScan.newCount})` : ''}
                   </button>
                   <button
-                    className={cn('px-2.5 py-1.5', !newOnly ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50')}
+                    className={cn('px-2.5 py-1.5', !newOnly ? 'bg-emerald-600 text-white' : 'text-foreground/80 hover:bg-accent')}
                     onClick={() => setNewOnly(false)}
                   >
                     All matching
                   </button>
                 </div>
-                <Button size="sm" variant="outline" className="h-8 gap-1 bg-white text-[11px]" onClick={saveFiltersToScan} disabled={savingScan}>
+                <Button size="sm" variant="outline" className="h-8 gap-1 bg-card text-[11px]" onClick={saveFiltersToScan} disabled={savingScan}>
                   <Save className="h-3 w-3" /> Save filters to scan
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 gap-1 text-[11px] text-slate-500" onClick={clearScan}>
+                <Button size="sm" variant="ghost" className="h-8 gap-1 text-[11px] text-muted-foreground" onClick={clearScan}>
                   <X className="h-3 w-3" /> Exit scan
                 </Button>
               </div>
@@ -288,7 +288,7 @@ export function DealFinderView() {
           </Card>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-slate-600" aria-live="polite">
+          <p className="text-sm text-foreground/80" aria-live="polite">
             {loading ? 'Querying deal store…' : (
               <>
                 <b className="font-mono">{total.toLocaleString()}</b> leads match · page {page} of {totalPages}
@@ -319,9 +319,9 @@ export function DealFinderView() {
           </div>
         </div>
 
-        <Card className="overflow-hidden border-slate-200 shadow-sm">
+        <Card className="overflow-hidden border-border shadow-sm">
           {/* header */}
-          <div className="hidden grid-cols-[minmax(240px,1fr)_92px_84px_84px_76px_120px_84px] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 lg:grid">
+          <div className="hidden grid-cols-[minmax(240px,1fr)_92px_84px_84px_76px_120px_84px] items-center gap-2 border-b border-border bg-secondary px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground lg:grid">
             <span>Product / source</span>
             <span className="text-right">Retail</span>
             <span className="text-right">Buy box</span>
@@ -336,9 +336,9 @@ export function DealFinderView() {
 
           {!loading && rows.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-16 text-center">
-              <Search className="h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-600">{activeScan && newOnly ? 'No new items from the last run' : 'No leads match these filters'}</p>
-              <p className="max-w-xs text-xs text-slate-400">
+              <Search className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground/80">{activeScan && newOnly ? 'No new items from the last run' : 'No leads match these filters'}</p>
+              <p className="max-w-xs text-xs text-muted-foreground">
                 {activeScan && newOnly
                   ? 'The last run found nothing new that passes this scan’s filters. Switch to “All matching”, or run the scan again.'
                   : 'Try relaxing min ROI/profit, clearing risk-flag exclusions, or running a new scan cycle — fresh stock lands every few hours.'}
@@ -365,16 +365,16 @@ export function DealFinderView() {
                   tabIndex={0}
                   onClick={() => openLead(l.id)}
                   onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openLead(l.id)}
-                  className="grid cursor-pointer grid-cols-1 items-center gap-2 border-b border-slate-50 px-3 py-2.5 transition-colors last:border-0 hover:bg-slate-50 lg:grid-cols-[minmax(240px,1fr)_92px_84px_84px_76px_120px_84px]"
+                  className="grid cursor-pointer grid-cols-1 items-center gap-2 border-b border-border px-3 py-2.5 transition-colors last:border-0 hover:bg-accent lg:grid-cols-[minmax(240px,1fr)_92px_84px_84px_76px_120px_84px]"
                 >
                   {/* product */}
                   <div className="flex min-w-0 items-center gap-2.5">
                     <ProductImage imageKey={l.imageUrl} title={l.title} category={l.category} />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-800">{l.title}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
-                        <span className="font-medium text-slate-600">{l.retailerName}</span>
-                        <Badge variant="outline" className="px-1 py-0 text-[9px] font-bold text-slate-400">{l.retailerTier}</Badge>
+                      <p className="truncate text-sm font-medium text-foreground">{l.title}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                        <span className="font-medium text-foreground/80">{l.retailerName}</span>
+                        <Badge variant="outline" className="px-1 py-0 text-[9px] font-bold text-muted-foreground">{l.retailerTier}</Badge>
                         <span className="font-mono">{l.asin}</span>
                         <span>·</span>
                         <span>BSR {l.bsr.toLocaleString()}</span>
@@ -389,31 +389,31 @@ export function DealFinderView() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2 lg:hidden">
-                    <div><p className="text-[10px] uppercase text-slate-400">Retail</p><p className="font-mono text-sm font-semibold">${l.retailerPrice.toFixed(2)}</p></div>
-                    <div><p className="text-[10px] uppercase text-slate-400">Buy box</p><p className="font-mono text-sm font-semibold">${l.buyBox.toFixed(2)}</p></div>
-                    <div><p className="text-[10px] uppercase text-slate-400">Profit</p><ProfitText value={l.netProfit} /></div>
-                    <div><p className="text-[10px] uppercase text-slate-400">ROI</p><RoiBadge roi={l.roiPct} /></div>
+                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary p-2 lg:hidden">
+                    <div><p className="text-[10px] uppercase text-muted-foreground">Retail</p><p className="font-mono text-sm font-semibold">${l.retailerPrice.toFixed(2)}</p></div>
+                    <div><p className="text-[10px] uppercase text-muted-foreground">Buy box</p><p className="font-mono text-sm font-semibold">${l.buyBox.toFixed(2)}</p></div>
+                    <div><p className="text-[10px] uppercase text-muted-foreground">Profit</p><ProfitText value={l.netProfit} /></div>
+                    <div><p className="text-[10px] uppercase text-muted-foreground">ROI</p><RoiBadge roi={l.roiPct} /></div>
                     <div className="col-span-2"><RiskFlagChips flags={l.riskFlags} max={4} /></div>
                   </div>
 
                   {/* retail price */}
                   <div className="hidden text-right lg:block">
-                    <p className="font-mono text-sm font-semibold tabular-nums text-slate-800">${l.retailerPrice.toFixed(2)}</p>
+                    <p className="font-mono text-sm font-semibold tabular-nums text-foreground">${l.retailerPrice.toFixed(2)}</p>
                     {l.discountPct > 0 && (
-                      <p className="font-mono text-[10px] tabular-nums text-slate-400">
+                      <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
                         <s>${l.listPrice.toFixed(2)}</s> −{l.discountPct.toFixed(0)}%
                       </p>
                     )}
                   </div>
 
                   {/* buy box */}
-                  <p className="hidden text-right font-mono text-sm tabular-nums text-slate-700 lg:block">${l.buyBox.toFixed(2)}</p>
+                  <p className="hidden text-right font-mono text-sm tabular-nums text-foreground/80 lg:block">${l.buyBox.toFixed(2)}</p>
 
                   {/* profit */}
                   <div className="hidden text-right lg:block">
                     <ProfitText value={l.netProfit} />
-                    <p className="font-mono text-[10px] tabular-nums text-slate-400">{l.marginPct.toFixed(0)}% margin</p>
+                    <p className="font-mono text-[10px] tabular-nums text-muted-foreground">{l.marginPct.toFixed(0)}% margin</p>
                   </div>
 
                   {/* roi */}
@@ -446,7 +446,7 @@ export function DealFinderView() {
         </Card>
 
         {!loading && rows.length > 0 && (
-          <div className="flex items-center justify-between pb-2 text-xs text-slate-500">
+          <div className="flex items-center justify-between pb-2 text-xs text-muted-foreground">
             <span>
               Showing {(page - 1) * 25 + 1}–{Math.min(page * 25, total)} of {total.toLocaleString()}
             </span>

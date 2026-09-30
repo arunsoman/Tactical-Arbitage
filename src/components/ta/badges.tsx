@@ -27,7 +27,7 @@ export function RiskFlagChips({ flags, max = 3, className }: { flags: string | R
               'px-1.5 py-0 text-[10px] font-medium',
               meta.severity === 'high' && 'border-red-300 bg-red-50 text-red-700',
               meta.severity === 'medium' && 'border-amber-300 bg-amber-50 text-amber-700',
-              meta.severity === 'low' && 'border-stone-300 bg-stone-50 text-stone-600'
+              meta.severity === 'low' && 'border-border bg-secondary text-foreground/80'
             )}
           >
             {meta.label}
@@ -92,7 +92,7 @@ export function MatchBadge({ method, confidence, flagged }: { method: string; co
     );
   }
   return (
-    <Badge variant="outline" className="gap-1 border-stone-300 bg-stone-50 px-1.5 py-0 text-[10px] text-stone-600">
+    <Badge variant="outline" className="gap-1 border-border bg-secondary px-1.5 py-0 text-[10px] text-foreground/80">
       <Clock className="h-3 w-3" /> Fuzzy {(confidence * 100).toFixed(0)}%
     </Badge>
   );
@@ -119,7 +119,7 @@ export function ScanChips({ scans, max = 2, className }: { scans?: LeadScanRef[]
           {s.name}
         </Badge>
       ))}
-      {rest > 0 && <span className="text-[10px] text-slate-400">+{rest}</span>}
+      {rest > 0 && <span className="text-[10px] text-muted-foreground">+{rest}</span>}
     </div>
   );
 }

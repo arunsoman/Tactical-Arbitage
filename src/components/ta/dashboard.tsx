@@ -20,13 +20,13 @@ import { cn } from '@/lib/utils';
 
 function KpiCard(props: { label: string; value: string; sub?: string; icon: React.ReactNode; tone?: string; progress?: number }) {
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-medium text-slate-500">{props.label}</p>
-            <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-900">{props.value}</p>
-            {props.sub && <p className="mt-0.5 text-[11px] text-slate-500">{props.sub}</p>}
+            <p className="text-xs font-medium text-muted-foreground">{props.label}</p>
+            <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">{props.value}</p>
+            {props.sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{props.sub}</p>}
           </div>
           <div className={cn('rounded-lg p-2', props.tone ?? 'bg-emerald-50 text-emerald-600')}>{props.icon}</div>
         </div>
@@ -105,9 +105,9 @@ export function DashboardView() {
 
       {/* charts row */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-slate-200 shadow-sm lg:col-span-2">
+        <Card className="border-border shadow-sm lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-700">Lead discovery — last 14 days</CardTitle>
+            <CardTitle className="text-sm font-semibold text-foreground/80">Lead discovery — last 14 days</CardTitle>
           </CardHeader>
           <CardContent className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -131,9 +131,9 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-700">ROI distribution</CardTitle>
+            <CardTitle className="text-sm font-semibold text-foreground/80">ROI distribution</CardTitle>
           </CardHeader>
           <CardContent className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -151,9 +151,9 @@ export function DashboardView() {
 
       {/* opportunities + side panels */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-slate-200 shadow-sm lg:col-span-2">
+        <Card className="border-border shadow-sm lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-700">Top opportunities by deal score</CardTitle>
+            <CardTitle className="text-sm font-semibold text-foreground/80">Top opportunities by deal score</CardTitle>
             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setView('deals')}>
               Open Deal Finder
             </Button>
@@ -163,12 +163,12 @@ export function DashboardView() {
               <button
                 key={l.id}
                 onClick={() => openLead(l.id)}
-                className="flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition-colors hover:border-slate-200 hover:bg-slate-50"
+                className="flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition-colors hover:border-border hover:bg-accent"
               >
                 <ProductImage imageKey={l.imageUrl} title={l.title} category={l.category} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-800">{l.title}</p>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+                  <p className="truncate text-sm font-medium text-foreground">{l.title}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                     <span>{l.retailerName}</span>
                     <span>·</span>
                     <span className="font-mono">${l.retailerPrice.toFixed(2)} → ${l.buyBox.toFixed(2)}</span>
@@ -188,19 +188,19 @@ export function DashboardView() {
         </Card>
 
         <div className="space-y-4">
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="flex-row items-center gap-2 pb-2">
-              <Store className="h-4 w-4 text-slate-500" />
-              <CardTitle className="text-sm font-semibold text-slate-700">Scan health</CardTitle>
+              <Store className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-foreground/80">Scan health</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {data.recentJobs.slice(0, 5).map((j) => (
                 <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <Badge variant="outline" className="px-1 py-0 text-[9px] font-bold text-slate-500">
+                    <Badge variant="outline" className="px-1 py-0 text-[9px] font-bold text-muted-foreground">
                       {j.tier}
                     </Badge>
-                    <span className="truncate text-slate-700">{j.retailer}</span>
+                    <span className="truncate text-foreground/80">{j.retailer}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1.5">
                     {j.newLeads > 0 && <span className="font-semibold text-emerald-700">+{j.newLeads}</span>}
@@ -212,24 +212,24 @@ export function DashboardView() {
                   </span>
                 </div>
               ))}
-              <Button size="sm" variant="ghost" className="h-7 w-full text-xs text-slate-500" onClick={() => setView('retailers')}>
+              <Button size="sm" variant="ghost" className="h-7 w-full text-xs text-muted-foreground" onClick={() => setView('retailers')}>
                 All retailers →
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="flex-row items-center gap-2 pb-2">
-              <Activity className="h-4 w-4 text-slate-500" />
-              <CardTitle className="text-sm font-semibold text-slate-700">Activity</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold text-foreground/80">Activity</CardTitle>
             </CardHeader>
             <CardContent className="max-h-64 space-y-2.5 overflow-y-auto">
               {data.activity.map((a) => (
                 <div key={a.id} className="flex gap-2 text-xs">
-                  <TrendingUp className="mt-0.5 h-3 w-3 shrink-0 text-slate-400" />
+                  <TrendingUp className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
                   <div>
-                    <p className="leading-snug text-slate-600">{a.message}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">
+                    <p className="leading-snug text-foreground/80">{a.message}</p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
                       {new Date(a.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </p>
                   </div>

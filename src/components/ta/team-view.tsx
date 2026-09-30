@@ -15,7 +15,7 @@ import { Check, ScrollText, ShieldCheck, UserPlus, X } from 'lucide-react';
 const ROLE_STYLE: Record<string, string> = {
   OWNER: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
   MANAGER: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-  VA: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+  VA: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
 };
 
 export function TeamView() {

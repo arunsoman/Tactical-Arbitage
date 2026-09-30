@@ -18,7 +18,7 @@ import { cn, touchButtonHeight } from '@/lib/utils';
 const TIER_TONE: Record<string, string> = {
   A: 'bg-emerald-100 text-emerald-800',
   B: 'bg-amber-100 text-amber-800',
-  C: 'bg-stone-200 text-stone-700',
+  C: 'bg-secondary text-foreground/80',
 };
 
 export function RetailersView() {
@@ -59,11 +59,11 @@ export function RetailersView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Retail network</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg font-bold text-foreground">Retail network</h2>
+          <p className="text-xs text-muted-foreground">
             US network — national chains, warehouse clubs, category specialists & closeout outlets — tiered by cadence: Tier A every 2–4h · Tier B 12–24h · Tier C weekly (FR-1.2). Scaling to 1,200 sites by month 6 (FR-1.1).
           </p>
-          <p className="mt-1 text-[11px] italic text-slate-400">
+          <p className="mt-1 text-[11px] italic text-muted-foreground">
             Simulation notice: this demo never contacts these stores — catalog data is generated locally to model the production scan network.
           </p>
         </div>
@@ -91,16 +91,16 @@ export function RetailersView() {
         {data?.retailers.map((r) => {
           const stale = r.avgFreshnessH > r.slaHours;
           return (
-            <Card key={r.id} className={cn('border-slate-200 shadow-sm', r.status !== 'healthy' && 'border-amber-200 bg-amber-50/30')}>
+            <Card key={r.id} className={cn('border-border shadow-sm', r.status !== 'healthy' && 'border-amber-200 bg-amber-50/30')}>
               <CardHeader className="pb-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary text-foreground/80">
                       <Store className="h-4 w-4" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-bold leading-tight text-slate-800">{r.name}</CardTitle>
-                      <p className="text-[11px] text-slate-400">{r.domain}</p>
+                      <CardTitle className="text-sm font-bold leading-tight text-foreground">{r.name}</CardTitle>
+                      <p className="text-[11px] text-muted-foreground">{r.domain}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -117,28 +117,28 @@ export function RetailersView() {
               </CardHeader>
               <CardContent className="space-y-2.5">
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-lg bg-slate-50 p-1.5">
-                    <p className="text-[9px] font-medium uppercase text-slate-400">Cadence</p>
-                    <p className="font-mono text-xs font-bold text-slate-700">{r.cadenceHours}h</p>
+                  <div className="rounded-lg bg-secondary p-1.5">
+                    <p className="text-[9px] font-medium uppercase text-muted-foreground">Cadence</p>
+                    <p className="font-mono text-xs font-bold text-foreground/80">{r.cadenceHours}h</p>
                   </div>
-                  <div className="rounded-lg bg-slate-50 p-1.5">
-                    <p className="text-[9px] font-medium uppercase text-slate-400">Freshness</p>
+                  <div className="rounded-lg bg-secondary p-1.5">
+                    <p className="text-[9px] font-medium uppercase text-muted-foreground">Freshness</p>
                     <p className={cn('font-mono text-xs font-bold', stale ? 'text-amber-600' : 'text-emerald-700')}>{r.avgFreshnessH}h</p>
                   </div>
-                  <div className="rounded-lg bg-slate-50 p-1.5">
-                    <p className="text-[9px] font-medium uppercase text-slate-400">SKUs</p>
-                    <p className="font-mono text-xs font-bold text-slate-700">{r.productCount}</p>
+                  <div className="rounded-lg bg-secondary p-1.5">
+                    <p className="text-[9px] font-medium uppercase text-muted-foreground">SKUs</p>
+                    <p className="font-mono text-xs font-bold text-foreground/80">{r.productCount}</p>
                   </div>
                 </div>
                 <div>
-                  <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>Scan coverage (SLA {r.slaHours}h)</span>
                     <span className="font-mono font-semibold">{r.coverage}%</span>
                   </div>
                   <Progress value={r.coverage} className="h-1.5" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-muted-foreground">
                     {r.lastScanAt
                       ? `Last scan ${new Date(r.lastScanAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
                       : 'Never scanned'}

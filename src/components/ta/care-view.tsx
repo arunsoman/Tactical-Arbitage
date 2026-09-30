@@ -26,17 +26,17 @@ import {
 const CATEGORY_CHIP: Record<string, string> = {
   BILLING: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
   DATA_QUALITY: 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400',
-  CONNECTOR: 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  CONNECTOR: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   AI_QUALITY: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  ACCOUNT: 'border-stone-400/40 bg-stone-500/10 text-stone-600 dark:text-stone-300',
-  SHOPPING: 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  ACCOUNT: 'border-border bg-stone-500/10 text-foreground/80',
+  SHOPPING: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   FEATURE: 'border-teal-500/30 bg-teal-500/10 text-teal-600 dark:text-teal-400',
   OTHER: 'border-border text-muted-foreground',
 };
 
 const STATUS_CHIP: Record<string, string> = {
   OPEN: 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400',
-  IN_PROGRESS: 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  IN_PROGRESS: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   WAITING_CUSTOMER: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
   RESOLVED: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   CLOSED: 'border-border text-muted-foreground',
@@ -229,7 +229,7 @@ export function CareView() {
                   <Badge variant="outline" className={cn('px-1 text-[9px]', PRIORITY_CHIP[t.priority])}>{t.priority}</Badge>
                   <Badge variant="outline" className={cn('px-1 text-[9px]', CATEGORY_CHIP[t.category])}>{t.category}</Badge>
                   {t.customerType === 'CONSUMER' && (
-                    <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 px-1 text-[9px] text-violet-600 dark:text-violet-400">
+                    <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-1 text-[9px] text-emerald-600 dark:text-emerald-400">
                       <ShoppingBag className="mr-0.5 h-2.5 w-2.5" /> SHOP
                     </Badge>
                   )}
@@ -382,7 +382,7 @@ function Ticket360Panel({
               <>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Type</span>
-                  <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 text-[10px] text-violet-600 dark:text-violet-400">
+                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-[10px] text-emerald-600 dark:text-emerald-400">
                     <ShoppingBag className="mr-1 h-3 w-3" /> BuyWise shopper
                   </Badge>
                 </div>
@@ -498,7 +498,7 @@ function Ticket360Panel({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm">
-              <ShoppingBag className="h-4 w-4 text-violet-500" /> Referenced comparison — exactly what the customer saw
+              <ShoppingBag className="h-4 w-4 text-emerald-500" /> Referenced comparison — exactly what the customer saw
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
