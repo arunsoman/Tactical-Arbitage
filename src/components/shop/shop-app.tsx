@@ -139,9 +139,8 @@ export function ShopApp() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
           <button type="button" onClick={() => { setPage('home'); setResults(null); }} className="flex items-center gap-2.5" aria-label="BuyWise home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 text-white shadow-sm">
-              <ShoppingBag className="h-5 w-5" />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.png" alt="" className="h-9 w-9 rounded-xl shadow-sm" />
             <span className="text-left">
               <span className="block text-base font-extrabold leading-tight tracking-tight">BuyWise</span>
               <span className="block text-[10px] font-medium leading-tight text-muted-foreground">AI shopping copilot · where to buy, buy or wait</span>

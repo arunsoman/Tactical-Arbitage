@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { DEFAULT_FILTERS, type RiskFlag } from '@/lib/ta/types';
-import { Radar, CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 const MARKETPLACES = [
   { id: 'US', label: 'Amazon US', note: 'amazon.com' },
@@ -101,7 +101,8 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
       <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] overflow-y-auto rounded-xl sm:max-w-lg" aria-describedby="onboarding-desc">
         <DialogHeader>
           <div className="mb-1 flex items-center gap-2 text-emerald-600">
-            <Radar className="h-5 w-5" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.png" alt="" className="h-6 w-6 rounded-md" />
             <span className="text-xs font-bold uppercase tracking-wider">Tactical Arbitrage</span>
           </div>
           <DialogTitle className="text-xl">{step === 0 ? 'Welcome — let’s calibrate your sourcing' : steps[step]}</DialogTitle>

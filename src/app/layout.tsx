@@ -20,12 +20,17 @@ export const metadata: Metadata = {
     "Scan 1,200+ retailers, match to Amazon, compute true net profit after every fee, and surface deals that meet your profitability filters. Scan → Match → Calculate → Filter → Act.",
   keywords: ["online arbitrage", "Amazon FBA", "sourcing", "deal finder", "profit calculator"],
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "Tactical Arbitrage",
     description: "Find profitable online-arbitrage leads in minutes, not hours.",
     type: "website",
+    images: [{ url: "/logo-full.jpg", width: 1024, height: 940, alt: "Tactical Arbitrage" }],
   },
 };
 

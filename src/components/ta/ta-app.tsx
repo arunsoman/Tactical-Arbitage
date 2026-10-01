@@ -208,9 +208,8 @@ export function TAApp() {
       {/* ---------- Desktop sidebar (progressive enhancement, §11) ---------- */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex items-center gap-2.5 px-5 pb-2 pt-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-slate-950">
-            <Radar className="h-5 w-5" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg" />
           <div>
             <p className="text-sm font-bold leading-tight">Tactical Arbitrage</p>
             <p className="text-[10px] leading-tight text-muted-foreground">AI-first OA sourcing</p>
@@ -276,9 +275,8 @@ export function TAApp() {
           <div className="flex h-14 items-center gap-3 px-3 md:px-6">
             {/* mobile brand */}
             <div className="flex items-center gap-2 md:hidden">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500 text-slate-950">
-                <Radar className="h-4 w-4" />
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icon.png" alt="" className="h-7 w-7 rounded-md" />
               <span className="text-sm font-bold">TA</span>
             </div>
 
