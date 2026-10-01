@@ -183,7 +183,7 @@ export async function runScan(options: { scanSetId?: string; retailerLimit?: num
       });
       const landed = round2(eff + ship + econ.taxFee);
       const roi = landed > 0 ? round2((econ.netProfit / landed) * 100) : 0;
-      const discount = listing.listPrice > 0 ? round1((1 - eff / listing.listPrice) * 100) : 0;
+      const discount = p.listPrice > 0 ? round1((1 - eff / p.listPrice) * 100) : 0;
       const oldPrice = p.match.lead.retailerPrice;
       await db.lead.update({
         where: { id: p.match.lead.id },

@@ -97,7 +97,7 @@ export function DealFinderView() {
     debounceRef.current = setTimeout(() => patch({ search }), 300);
   };
 
-  const toggleIn = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  const toggleIn = <T extends string>(arr: T[], v: T): T[] => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   const activeFilterCount = useMemo(() => {
     let n = 0;

@@ -83,7 +83,7 @@ export function computeLeadSnapshot(
     totalOffers: listing.fbaOffers + listing.fbmOffers,
   });
 
-  const discountPct = listing.listPrice > 0 ? round1((1 - effectivePrice / listing.listPrice) * 100) : 0;
+  const discountPct = product.listPrice > 0 ? round1((1 - effectivePrice / product.listPrice) * 100) : 0;
   const score = dealScore({
     roiPct: economics.roiPct,
     netProfit: economics.netProfit,

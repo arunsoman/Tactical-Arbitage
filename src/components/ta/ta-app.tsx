@@ -53,6 +53,7 @@ import {
   Sun,
   Users,
   Wrench,
+  ShoppingBag,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -240,6 +241,13 @@ export function TAApp() {
               )}
             </button>
           ))}
+          <a
+            href="/?portal=shop"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            BuyWise Shop
+          </a>
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
@@ -432,6 +440,13 @@ function MobileMoreSheet({ open, view, setView, onClose }: { open: boolean; view
             {item.label.split(' ')[0]}
           </button>
         ))}
+        <a
+          href="/?portal=shop"
+          className="flex h-14 flex-col items-center justify-center gap-1 rounded-lg border border-border bg-background text-[10px] font-semibold text-muted-foreground"
+        >
+          <ShoppingBag className="h-4 w-4" />
+          BuyWise
+        </a>
       </div>
     </div>
   );

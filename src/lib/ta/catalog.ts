@@ -325,6 +325,20 @@ export function generateListings(seed = 42, perCategory = 14): GeneratedListing[
   return out;
 }
 
+export interface GeneratedRetailProduct {
+  retailerIdx: number;
+  sku: string;
+  title: string;
+  brand: string;
+  category: string;
+  price: number;
+  listPrice: number;
+  couponPct: number;
+  upc: string;
+  packCount: number;
+  unitSize: string;
+}
+
 export interface MintedScanProduct extends GeneratedRetailProduct {
   /** ASIN this SKU resolves to (null → no viable match this run) */
   matchedAsin: string | null;
