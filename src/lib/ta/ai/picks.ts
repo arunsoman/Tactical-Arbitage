@@ -16,6 +16,7 @@ import {
 } from './ranking';
 import type { Outcome } from '@prisma/client';
 import type { PickDTO, PicksResponse, PicksMeta } from './types';
+import { verdictForLead } from './leadQuery';
 
 const SNAPSHOT_TTL_MS = 10 * 60 * 1000; // aggressive caching of top picks (§7)
 const KEEP_SNAPSHOTS = 3;
@@ -80,14 +81,14 @@ async function regenerate(): Promise<PicksResponse> {
     )
   );
 
-  // ---- reasons for the returned slice (latency-instrumented, budget p95 < 5s) ----
+  // ---- reasons + verdict for the returned slice (latency-instrumented, budget p95 < 5s) ----
   const LIMIT = 20;
   const top = rankOut.ranked.slice(0, LIMIT);
   const listingIds = Array.from(new Set(top.map((r) => r.lead.listingId)));
   const listings = listingIds.length > 0
     ? await db.amazonListing.findMany({
         where: { id: { in: listingIds } },
-        select: { id: true, priceStability: true, keepa30Avg: true, rankTrend: true },
+        select: { id: true, priceStability: true, keepa30Avg: true, rankTrend: true, historyJson: true },
       })
     : [];
   const listingById = new Map(listings.map((l) => [l.id, l]));
@@ -95,13 +96,15 @@ async function regenerate(): Promise<PicksResponse> {
   const { result: withReasons, ms: reasonMs } = await withLatency('REASON', () =>
     Promise.resolve(
       top.map(({ lead, aiScore, confidence }) => {
+        const listing = listingById.get(lead.listingId);
         const { reason, factors } = buildReasons(lead, confidence, {
-          listing: listingById.get(lead.listingId),
+          listing: listing ? { priceStability: listing.priceStability, keepa30Avg: listing.keepa30Avg, rankTrend: listing.rankTrend } : undefined,
           affinity,
           minRoi: settings.minRoi,
           priceAgeH: lead.priceAgeH,
         });
-        return { lead, aiScore, confidence, reason, factors };
+        const verdict = verdictForLead(lead, listing?.historyJson, settings.minRoi);
+        return { lead, aiScore, confidence, reason, factors, verdict };
       })
     )
   );
@@ -110,7 +113,7 @@ async function regenerate(): Promise<PicksResponse> {
     (await db.pipelineItem.findMany({ select: { leadId: true } })).map((p) => p.leadId)
   );
 
-  const picks: PickDTO[] = withReasons.map(({ lead, aiScore, confidence, reason, factors }, i) => ({
+  const picks: PickDTO[] = withReasons.map(({ lead, aiScore, confidence, reason, factors, verdict }, i) => ({
     leadId: lead.id,
     rank: i + 1,
     aiScore,
@@ -118,6 +121,7 @@ async function regenerate(): Promise<PicksResponse> {
     confidence,
     reason,
     factors,
+    ...(verdict ? { verdict } : {}),
     personalization: (factors.some((f) => f.key === 'personalization') ? strength : strength === 'NONE' ? 'NONE' : 'WEAK') as PickDTO['personalization'],
     lead: {
       id: lead.id,

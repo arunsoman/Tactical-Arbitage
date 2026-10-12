@@ -1,37 +1,31 @@
 'use client';
 
-// Tactical Arbitrage — AI-first v2.2 shell.
-// Mobile (<md): bottom tab bar, AI Picks as home, thumb-friendly everything.
-// Desktop (≥md): full sidebar with dense power tools (progressive enhancement).
-// Dark mode by default (§10), theme toggle in both navs.
+// Tactical Arbitrage — investor-demo shell.
+//
+// SCOPE: only the AI feature set funded by this build is live —
+//   (1) evidence-linked AI ranking + reasoning, (2) NL deal search (typed+voice),
+//   (3) buy-or-wait opportunity verdict, (4) calibrated confidence, (5) feedback
+//   loop, (6) grounded demo assistant.
+// Every other surface (Dashboard, Deal Finder, Saved Scans, Pipeline, Alerts,
+// Retailers, Team, AI Status, Billing, Settings, Ops, Care, Support, BuyWise)
+// renders grayed out in the nav and can't be activated.
+// Mobile (<md): bottom tab bar with Picks / Ask / Assistant + a grayed "More".
+// Desktop (≥md): full sidebar, same scoping. Dark mode by default (§10).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTAStore, type View } from './store';
+import { useTAStore, isViewEnabled, type View } from './store';
 import { api, type BootstrapDTO } from '@/lib/ta/api';
-import { PLANS, SCHEDULE_HOURS } from '@/lib/ta/types';
+import { PLANS } from '@/lib/ta/types';
 import { ProductImage } from './product-image';
 import { PortalLauncher } from '@/components/portal-launcher';
 import { PicksView } from './picks-view';
 import { SearchView } from './search-view';
-import { AlertsView } from './alerts-view';
-import { TeamView } from './team-view';
-import { AiStatusView } from './ai-status-view';
-import { DashboardView } from './dashboard';
-import { DealFinderView } from './deal-finder';
-import { SavedScansView } from './scans';
-import { PipelineView } from './pipeline';
-import { RetailersView } from './retailers';
-import { BillingView } from './billing';
-import { SettingsView } from './settings-view';
-import { OpsView } from './ops-view';
-import { CareView } from './care-view';
-import { SupportView } from './support-view';
+import { AssistantView } from './assistant-view';
+import { LockedView } from './locked-view';
 import { OnboardingWizard } from './onboarding';
-import { LeadDrawer } from './lead-drawer';
 import { DealDetailSheet } from './deal-detail-sheet';
 import { useTheme } from 'next-themes';
 import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import {
   Bell,
@@ -43,26 +37,25 @@ import {
   Home,
   KanbanSquare,
   LayoutDashboard,
+  Lock,
+  MessageSquareMore,
   Moon,
-  Play,
   Radar,
-  RefreshCw,
-  Search,
   Settings,
   Store,
   Sun,
   Users,
   Wrench,
-  ShoppingBag,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 const DESKTOP_NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'picks', label: 'AI Picks', icon: Home },
+  { id: 'search', label: 'Ask Deals (NL)', icon: Radar },
+  { id: 'assistant', label: 'Demo Assistant', icon: MessageSquareMore },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'deals', label: 'Deal Finder', icon: Radar },
-  { id: 'search', label: 'Ask Deals (NL)', icon: Search },
   { id: 'scans', label: 'Saved Scans', icon: BookmarkCheck },
   { id: 'pipeline', label: 'Pipeline', icon: KanbanSquare },
   { id: 'alerts', label: 'Alerts', icon: Bell },
@@ -78,18 +71,25 @@ const DESKTOP_NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] =
 
 const TABS: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'picks', label: 'Picks', icon: Home },
-  { id: 'search', label: 'Ask', icon: Search },
-  { id: 'pipeline', label: 'Pipeline', icon: KanbanSquare },
-  { id: 'alerts', label: 'Alerts', icon: Bell },
+  { id: 'search', label: 'Ask', icon: Radar },
+  { id: 'assistant', label: 'Assistant', icon: MessageSquareMore },
 ];
 
 export function TAApp() {
-  const { view, setView, bootstrap, setBootstrap, scanning, setScanning, bumpDealRefresh, bumpPicksRefresh, openLead, selectedLeadId, deepLinkLeadId, setDeepLinkLeadId } = useTAStore();
+  const { view, setView, bootstrap, setBootstrap, bumpDealRefresh, bumpPicksRefresh, openLead, selectedLeadId, deepLinkLeadId, setDeepLinkLeadId } = useTAStore();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const toastGray = useCallback(
+    (label: string) =>
+      toast({
+        title: `${label} — not covered in the ₹15L build`,
+        description: 'The funded scope is the AI intelligence layer; this surface is the post-budget roadmap. Open it from the sidebar for the full screen.',
+      }),
+    [toast]
+  );
 
   const loadBootstrap = useCallback(async () => {
     try {
@@ -101,23 +101,26 @@ export function TAApp() {
   }, [setBootstrap, toast]);
 
   useEffect(() => {
-    setMounted(true);
+    // rAF-deferred mount flag (theme icon hydration guard) — keeps the effect body free of sync setState
+    const id = requestAnimationFrame(() => setMounted(true));
     void loadBootstrap();
+    return () => cancelAnimationFrame(id);
   }, [loadBootstrap]);
 
-  // deep links: /?deal=<leadId> (notifications) and /?view=<view>
+  // deep links: /?deal=<leadId> and /?view=<view> — view links are honored only
+  // for the demo-scoped views; anything else explains itself and stays on Picks.
   useEffect(() => {
     if (!bootstrap) return;
     const params = new URLSearchParams(window.location.search);
     const deal = params.get('deal');
     const v = params.get('view') as View | null;
-    if (v) setView(v);
+    if (v) setView(v); // honored for any view — non-scope views render the locked roadmap screen
     if (deal) {
       setDeepLinkLeadId(deal);
       openLead(deal);
     }
-    // clean the URL so refresh doesn't re-open
     if (deal || v) window.history.replaceState({}, '', '/');
+     
   }, [bootstrap]);
 
   // theme sync from server settings (first load only)
@@ -128,65 +131,11 @@ export function TAApp() {
     }
   }, [bootstrap?.settings.theme, mounted]);
 
-  const runScan = useCallback(async () => {
-    setScanning(true);
-    try {
-      const res = await api.scanRun({ retailerLimit: 5 });
-      const t = res.summary.totals;
-      toast({
-        title: `Scan cycle complete — ${t.newLeads} new leads`,
-        description: `${t.jobs} retailers scanned · ${t.priceUpdates} price updates · ${(res.summary.durationMs / 1000).toFixed(1)}s`,
-      });
-      bumpDealRefresh();
-      bumpPicksRefresh();
-      void api.picks(true); // re-rank immediately so picks reflect the scan (§7 caching note)
-      loadBootstrap();
-    } catch (e) {
-      toast({ title: 'Scan could not start', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
-    } finally {
-      setScanning(false);
-    }
-  }, [setScanning, toast, bumpDealRefresh, bumpPicksRefresh, loadBootstrap]);
-
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     void api.updateSettings({ theme: next });
   };
-
-  // Scheduler: while the app is open, run any active saved scan whose interval has elapsed
-  // (one per tick). There is no server-side cron in this demo build.
-  const autoRunning = useRef(false);
-  const onboarded = bootstrap?.settings.onboarded ?? false;
-  useEffect(() => {
-    if (!onboarded) return;
-    const tick = async () => {
-      if (autoRunning.current || useTAStore.getState().scanning) return;
-      autoRunning.current = true;
-      try {
-        const { scans } = await api.scanSets();
-        const due = scans.find((s) => {
-          const hours = SCHEDULE_HOURS[s.schedule];
-          return s.active && hours != null && Date.now() - new Date(s.lastRunAt ?? 0).getTime() >= hours * 3600e3;
-        });
-        if (!due) return;
-        const res = await api.scanRun({ scanSetId: due.id, retailerLimit: 4 });
-        toast({ title: `Scheduled scan "${due.name}" ran`, description: `${res.summary.totals.newLeads} new matching leads — open Saved Scans → Show results.` });
-        bumpDealRefresh();
-        void loadBootstrap();
-      } catch {
-        // slot busy or transient failure — try again next tick
-      } finally {
-        autoRunning.current = false;
-      }
-    };
-    const first = setTimeout(tick, 5000);
-    const every = setInterval(tick, 60_000);
-    return () => {
-      clearTimeout(first);
-      clearInterval(every);
-    };
-  }, [onboarded, toast, bumpDealRefresh, loadBootstrap]);
 
   if (!bootstrap) {
     return (
@@ -201,52 +150,58 @@ export function TAApp() {
 
   const settings = bootstrap.settings;
   const plan = PLANS[settings.plan];
-  const unread = bootstrap.counts.unreadNotifications;
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* ---------- Desktop sidebar (progressive enhancement, §11) ---------- */}
+      {/* ---------- Desktop sidebar ---------- */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex items-center gap-2.5 px-5 pb-2 pt-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg" />
           <div>
             <p className="text-sm font-bold leading-tight">Tactical Arbitrage</p>
-            <p className="text-[10px] leading-tight text-muted-foreground">AI-first OA sourcing</p>
+            <p className="text-[10px] leading-tight text-muted-foreground">AI investor demo · 6-feature scope</p>
           </div>
         </div>
 
         <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto px-3" aria-label="Main navigation">
-          {DESKTOP_NAV.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setView(item.id)}
-              aria-current={view === item.id ? 'page' : undefined}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                view === item.id ? 'bg-sidebar-accent text-foreground' : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'
-              )}
-            >
-              <item.icon className={cn('h-4 w-4', view === item.id && 'text-emerald-500')} />
-              {item.label}
-              {item.id === 'pipeline' && bootstrap.counts.pipelineCount > 0 && (
-                <span className="ml-auto rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold">{bootstrap.counts.pipelineCount}</span>
-              )}
-              {item.id === 'alerts' && unread > 0 && (
-                <span className="ml-auto rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-slate-950">{unread}</span>
-              )}
-              {item.id === 'care' && bootstrap.counts.openCareTickets > 0 && (
-                <span className="ml-auto rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-slate-950">{bootstrap.counts.openCareTickets}</span>
-              )}
-            </button>
-          ))}
-          <a
-            href="/?portal=shop"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
+          {DESKTOP_NAV.map((item) => {
+            const enabled = isViewEnabled(item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => setView(item.id)}
+                aria-current={enabled && view === item.id ? 'page' : undefined}
+                aria-disabled={!enabled}
+                title={enabled ? item.label : `${item.label} — not covered in the ₹15L build (opens the roadmap screen)`}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  enabled && view === item.id
+                    ? 'bg-sidebar-accent text-foreground'
+                    : enabled
+                      ? 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'
+                      : 'cursor-not-allowed text-muted-foreground/45 hover:bg-transparent'
+                )}
+              >
+                <item.icon className={cn('h-4 w-4', enabled && view === item.id && 'text-emerald-500')} />
+                <span className="min-w-0 truncate">{item.label}</span>
+                {!enabled && <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground/50" aria-hidden />}
+                {enabled && item.id === 'assistant' && (
+                  <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">NEW</span>
+                )}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            title="BuyWise Shop — not covered in the ₹15L build"
+            onClick={() => toastGray('BuyWise Shop')}
+            className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/45"
           >
-            <ShoppingBag className="h-4 w-4" />
-            BuyWise Shop
-          </a>
+            <Store className="h-4 w-4" />
+            <span className="min-w-0 truncate">BuyWise Shop</span>
+            <Lock className="ml-auto h-3 w-3 shrink-0 text-muted-foreground/50" aria-hidden />
+          </button>
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
@@ -258,13 +213,17 @@ export function TAApp() {
               </Badge>
             </div>
             <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-              {plan.savedScans == null ? 'Unlimited scans' : `${bootstrap.counts.scansets}/${plan.savedScans} saved scans`} · {plan.concurrentScanSlots} scan slots
+              Mock billing shown for context — plan changes are outside this demo's scope.
             </p>
-            {settings.plan !== 'EXPERT' && (
-              <Button size="sm" className="mt-2 h-7 w-full bg-emerald-600 text-xs hover:bg-emerald-500" onClick={() => setView('billing')}>
-                Upgrade
-              </Button>
-            )}
+            <button
+              type="button"
+              onClick={() => setView('billing')}
+              className="mt-2 h-7 w-full rounded-md bg-emerald-600/40 text-xs font-semibold text-white/70 transition-colors hover:bg-emerald-600/60"
+              title="Billing — not covered in the ₹15L build (opens the roadmap screen)"
+              aria-label="Upgrade (roadmap screen)"
+            >
+              Upgrade
+            </button>
           </div>
         </div>
       </aside>
@@ -275,7 +234,7 @@ export function TAApp() {
           <div className="flex h-14 items-center gap-3 px-3 md:px-6">
             {/* mobile brand */}
             <div className="flex items-center gap-2 md:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src="/icon.png" alt="" className="h-7 w-7 rounded-md" />
               <span className="text-sm font-bold">TA</span>
             </div>
@@ -291,19 +250,15 @@ export function TAApp() {
             </div>
 
             <div className="ml-auto flex items-center gap-1.5">
-              <PortalLauncher current="ta" />
+              <PortalLauncher current="ta" enabled={['ta']} onLocked={(label) => toastGray(`${label} portal`)} />
 
-              <Button
-                size="sm"
-                onClick={runScan}
-                disabled={scanning}
-                className="h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-500 md:h-8"
-                aria-label="Run scan cycle across retailers"
-              >
-                {scanning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                <span className="hidden sm:inline">{scanning ? 'Scanning…' : 'Run scan'}</span>
-                <span className="sm:hidden">Scan</span>
-              </Button>
+              <span title="Scan engine is grayed out in this AI demo — the store ships pre-loaded with fresh data">
+                <Button size="sm" disabled className="h-9 gap-1.5 bg-emerald-600/40 md:h-8" aria-disabled aria-label="Scan engine disabled in demo scope">
+                  <Radar className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Run scan</span>
+                  <span className="sm:hidden">Scan</span>
+                </Button>
+              </span>
 
               <Button variant="ghost" size="icon" className="h-11 w-11 md:h-8 md:w-8" aria-label="Toggle dark mode" onClick={toggleTheme}>
                 {mounted && theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -311,16 +266,13 @@ export function TAApp() {
 
               <button
                 type="button"
-                aria-label={`Alerts${unread ? ` — ${unread} unread` : ''}`}
-                className="relative flex h-11 w-11 items-center justify-center rounded-lg transition-colors hover:bg-accent md:h-8 md:w-8"
+                aria-label="Alerts — not covered in the ₹15L build"
+                title="Alerts — not covered in the ₹15L build (opens the roadmap screen)"
+                className="relative flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground/45 transition-colors hover:bg-accent/40 md:h-8 md:w-8"
                 onClick={() => setView('alerts')}
               >
                 <Bell className="h-4 w-4" />
-                {unread > 0 && (
-                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[9px] font-bold text-slate-950">
-                    {unread}
-                  </span>
-                )}
+                <Lock className="absolute right-0.5 top-0.5 h-2.5 w-2.5" aria-hidden />
               </button>
 
               <div className="hidden items-center gap-2 sm:flex">
@@ -334,32 +286,21 @@ export function TAApp() {
           </div>
         </header>
 
-        <main className="flex-1 pb-16 md:pb-0">
+        <main className="flex flex-1 flex-col pb-16 md:pb-0">
           {view === 'picks' && <PicksView />}
           {view === 'search' && <SearchView />}
-          {view === 'alerts' && <AlertsView />}
-          {view === 'team' && <TeamView />}
-          {view === 'ai' && <AiStatusView />}
-          {view === 'dashboard' && <DashboardView />}
-          {view === 'deals' && <DealFinderView />}
-          {view === 'scans' && <SavedScansView />}
-          {view === 'pipeline' && <PipelineView />}
-          {view === 'retailers' && <RetailersView />}
-          {view === 'billing' && <BillingView />}
-          {view === 'settings' && <SettingsView />}
-          {view === 'ops' && <OpsView />}
-          {view === 'care' && <CareView />}
-          {view === 'support' && <SupportView />}
+          {view === 'assistant' && <AssistantView />}
+          {!isViewEnabled(view) && <LockedView view={view} />}
         </main>
 
         <footer className="mt-auto hidden border-t border-border px-6 py-3 md:block">
           <p className="text-center text-[11px] text-muted-foreground">
-            Tactical Arbitrage · AI-first v2.2 demo build · retailer names model the production scan network, but all data is generated locally — no requests are made to these stores
+            AI investor demo — live: evidence-linked ranking · NL search · buy-or-wait verdicts · calibrated confidence · feedback loop · grounded assistant. Everything grayed out is the post-budget roadmap. All data is generated locally; no requests are made to real retailers.
           </p>
         </footer>
       </div>
 
-      {/* ---------- Mobile bottom tab bar (§10: thumb-friendly primary nav) ---------- */}
+      {/* ---------- Mobile bottom tab bar ---------- */}
       <nav
         className="pb-safe fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card/95 backdrop-blur md:hidden"
         aria-label="Primary mobile navigation"
@@ -374,11 +315,8 @@ export function TAApp() {
           >
             <t.icon className="h-5 w-5" />
             <span className="text-[10px] font-semibold">{t.label}</span>
-            {t.id === 'alerts' && unread > 0 && (
-              <span className="absolute right-[22%] top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[9px] font-bold text-slate-950">{unread}</span>
-            )}
-            {t.id === 'pipeline' && bootstrap.counts.pipelineCount > 0 && (
-              <span className="absolute right-[22%] top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-secondary px-0.5 text-[9px] font-bold">{bootstrap.counts.pipelineCount}</span>
+            {t.id === 'assistant' && (
+              <span className="absolute right-[18%] top-1.5 rounded-full bg-emerald-500 px-1 py-0.5 text-[8px] font-bold text-slate-950">NEW</span>
             )}
           </button>
         ))}
@@ -386,23 +324,21 @@ export function TAApp() {
           type="button"
           onClick={() => setMoreOpen((o) => !o)}
           aria-expanded={moreOpen}
-          className={cn('flex h-16 flex-1 flex-col items-center justify-center gap-0.5', moreOpen || MORE_OPEN.has(view) ? 'text-emerald-500' : 'text-muted-foreground')}
+          className={cn('flex h-16 flex-1 flex-col items-center justify-center gap-0.5', moreOpen ? 'text-emerald-500' : 'text-muted-foreground')}
         >
           <LayoutDashboard className="h-5 w-5" />
           <span className="text-[10px] font-semibold">More</span>
         </button>
       </nav>
 
-      {/* "More" sheet for remaining views on mobile */}
-      <MobileMoreSheet open={moreOpen} view={view} setView={(v) => { setView(v); setMoreOpen(false); }} onClose={() => setMoreOpen(false)} />
+      {/* "More" sheet — everything beyond the three live surfaces, locked to the roadmap screen */}
+      <MobileMoreSheet open={moreOpen} toastGray={toastGray} onGo={setView} onClose={() => setMoreOpen(false)} />
 
       {!settings.onboarded && <OnboardingWizard onDone={loadBootstrap} />}
 
-      {/* Desktop lead drawer (power view) + mobile deal detail sheet (US-2/US-6) */}
-      {!isMobile && <LeadDrawer />}
-      <MobileDetailBridge
-        bootstrap={bootstrap}
-        leadId={isMobile ? deepLinkLeadId ?? selectedLeadId : null}
+      {/* deal detail sheet — responsive, lands on the verdict panel */}
+      <DemoDetailBridge
+        leadId={deepLinkLeadId ?? selectedLeadId}
         onClosed={() => {
           setDeepLinkLeadId(null);
           openLead(null);
@@ -416,47 +352,57 @@ export function TAApp() {
   );
 }
 
-const MORE_OPEN = new Set<View>(['dashboard', 'deals', 'scans', 'retailers', 'billing', 'settings', 'team', 'ai', 'ops', 'care', 'support']);
-
-function MobileMoreSheet({ open, view, setView, onClose }: { open: boolean; view: View; setView: (v: View) => void; onClose: () => void }) {
+function MobileMoreSheet({ open, toastGray, onGo, onClose }: { open: boolean; toastGray: (label: string) => void; onGo: (v: View) => void; onClose: () => void }) {
   if (!open) return null;
   const items = DESKTOP_NAV.filter((n) => !TABS.some((t) => t.id === n.id));
   return (
     <div className="pb-safe fixed inset-x-0 bottom-16 z-30 border-t border-border bg-card p-3 shadow-lg md:hidden" role="navigation" aria-label="More sections" onClick={onClose}>
+      <p className="pb-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Not covered in the ₹15L build — opens the roadmap screen</p>
       <div className="grid grid-cols-4 gap-2">
         {items.map((item) => (
           <button
             key={item.id}
             type="button"
-            onClick={() => setView(item.id)}
-            className={cn(
-              'flex h-14 flex-col items-center justify-center gap-1 rounded-lg border text-[10px] font-semibold',
-              view === item.id ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'border-border bg-background text-muted-foreground'
-            )}
+            title={`${item.label} — not covered in this build`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onGo(item.id);
+            }}
+            className="flex h-14 flex-col items-center justify-center gap-1 rounded-lg border border-border bg-background text-[10px] font-semibold text-muted-foreground/45"
           >
-            <item.icon className="h-4 w-4" />
+            <span className="relative">
+              <item.icon className="h-4 w-4" />
+              <Lock className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5" aria-hidden />
+            </span>
             {item.label.split(' ')[0]}
           </button>
         ))}
-        <a
-          href="/?portal=shop"
-          className="flex h-14 flex-col items-center justify-center gap-1 rounded-lg border border-border bg-background text-[10px] font-semibold text-muted-foreground"
+        <button
+          type="button"
+          title="BuyWise — grayed out"
+          onClick={(e) => {
+            e.stopPropagation();
+            toastGray('BuyWise Shop');
+          }}
+          className="flex h-14 flex-col items-center justify-center gap-1 rounded-lg border border-border bg-background text-[10px] font-semibold text-muted-foreground/45"
         >
-          <ShoppingBag className="h-4 w-4" />
+          <span className="relative">
+            <Store className="h-4 w-4" />
+            <Lock className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5" aria-hidden />
+          </span>
           BuyWise
-        </a>
+        </button>
       </div>
     </div>
   );
 }
 
-function MobileDetailBridge({
-  bootstrap,
+/** Deep-linked / notification-opened deals — the detail sheet works at every width. */
+function DemoDetailBridge({
   leadId,
   onClosed,
   onChanged,
 }: {
-  bootstrap: BootstrapDTO;
   leadId: string | null;
   onClosed: () => void;
   onChanged: () => void;
@@ -466,10 +412,7 @@ function MobileDetailBridge({
 
   useEffect(() => {
     if (!leadId) return;
-    // desktop has the LeadDrawer power panel — the mobile sheet is for phones only
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) return;
     let cancelled = false;
-    // build a minimal pick from the picks snapshot when available, else fetch detail
     api
       .picks(false)
       .then((res) => {
@@ -482,7 +425,7 @@ function MobileDetailBridge({
             aiScore: 0,
             baseScore: 0,
             confidence: { p: 0, band: 'LOW', sampleSize: 0, method: 'global-prior' },
-            reason: 'Opened from a notification or pipeline — full detail below.',
+            reason: 'Opened from a deep link — the full detail and verdict load below.',
             factors: [],
             personalization: 'NONE',
             lead: {
@@ -500,7 +443,7 @@ function MobileDetailBridge({
     return () => {
       cancelled = true;
     };
-  }, [leadId, bootstrap]);
+  }, [leadId]);
 
   if (!leadId || !pick || pickFor !== leadId) return null;
   return <DealDetailSheet pick={pick} onClose={onClosed} onChanged={onChanged} />;

@@ -14,8 +14,12 @@ import type { PickDTO } from '@/lib/ta/ai/types';
 import { fmtMoney } from '@/lib/ta/profit';
 import { RISK_FLAG_META, parseJsonArray, type RiskFlag } from '@/lib/ta/types';
 import { AiScoreRing, ConfidenceBadge, FactorRow, FreshnessDot } from './ai-bits';
+import { OpportunityVerdictPanel } from './opportunity-verdict';
+import { QuickFeedbackRow } from './feedback-row';
 import { OutcomeSheet, type OutcomeSheetTarget } from './outcome-sheet';
 import { TrustSheet, type TrustTarget } from './trust-sheet';
+import { buildOpportunityVerdict } from '@/lib/ta/ai/verdict';
+import { useTAStore } from './store';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Heart, MoreHorizontal, ShieldQuestion, ShoppingCart } from 'lucide-react';
 import { Area, AreaChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -40,6 +44,34 @@ export function DealDetailSheet({ pick, onClose, onSaved, onChanged }: { pick: P
 
   const history = useMemo(() => detail?.listing.history ?? [], [detail]);
 
+  // opportunity verdict: server-provided with the pick, or computed client-side
+  // from the same deterministic ledger when the payload predates it
+  const minRoi = useTAStore((s) => s.bootstrap?.settings.minRoi ?? 30);
+  const verdict = useMemo(() => {
+    if (pick?.verdict) return pick.verdict;
+    if (pick && detail) {
+      return buildOpportunityVerdict({
+        retailerPrice: detail.lead.retailerPrice,
+        listPrice: detail.lead.listPrice,
+        couponPct: detail.lead.couponPct,
+        buyBox: detail.lead.buyBox,
+        netProfit: detail.lead.netProfit,
+        roiPct: detail.lead.roiPct,
+        breakeven: detail.lead.breakeven,
+        discountPct: detail.lead.discountPct,
+        bsr: detail.lead.bsr,
+        fbaOffers: detail.lead.fbaOffers,
+        amazonRetail: detail.lead.amazonRetail,
+        riskFlags: detail.lead.riskFlagList,
+        priceAgeH: detail.lead.priceAgeH,
+        fresh: detail.lead.fresh,
+        history: detail.listing.history.map((h) => h.p),
+        minRoi,
+      });
+    }
+    return null;
+  }, [pick, detail, minRoi]);
+
   if (!pick) return null;
   const lead = pick.lead;
   const flags = parseJsonArray(lead.riskFlags) as RiskFlag[];
@@ -48,7 +80,7 @@ export function DealDetailSheet({ pick, onClose, onSaved, onChanged }: { pick: P
     setSaving(true);
     try {
       await api.saveToPipeline(lead.id);
-      toast({ title: 'Saved to pipeline', description: `${lead.asin} is now in your New list.` });
+      toast({ title: 'Saved to your list', description: 'Stored as a positive learning signal for your ranking.' });
       onSaved?.();
       onChanged?.();
     } catch (e) {
@@ -127,6 +159,18 @@ export function DealDetailSheet({ pick, onClose, onSaved, onChanged }: { pick: P
                   <p className="text-lg font-bold">{Math.round(lead.roiPct)}% / {Math.round(lead.marginPct)}%</p>
                 </div>
               </div>
+
+              {/* opportunity verdict — Buy Now / Wait / Avoid (deterministic ledger) */}
+              {verdict && <OpportunityVerdictPanel verdict={verdict} />}
+
+              {/* quick feedback — one-tap learning loop (outcome / suppression / match flag) */}
+              <QuickFeedbackRow
+                leadId={lead.id}
+                asin={lead.asin}
+                buyBox={detail?.lead.buyBox ?? lead.buyBox}
+                totalCost={detail?.lead.totalCost}
+                className="rounded-xl border border-border bg-card p-3"
+              />
 
               {/* progressive disclosure — one line by default (US-3) */}
               <section className="rounded-xl border border-border bg-card">

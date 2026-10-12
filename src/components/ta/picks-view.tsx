@@ -65,7 +65,7 @@ export function PicksView() {
     try {
       await api.saveToPipeline(pick.leadId);
       setSavedIds((s) => new Set(s).add(pick.leadId));
-      toast({ title: 'Saved to pipeline', description: 'Find it under Pipeline → New.' });
+      toast({ title: 'Saved to your list', description: 'Stored — outcome prompts follow when it is bought, feeding the ranking loop.' });
       bumpDealRefresh();
     } catch (e) {
       toast({ title: 'Could not save', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
@@ -91,6 +91,21 @@ export function PicksView() {
           </Button>
         </div>
       </header>
+
+      {/* scope strip */}
+      <section className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">This build implements exactly the funded AI feature set</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {['Evidence-linked ranking', 'NL search + voice', 'Buy-or-wait verdicts', 'Calibrated confidence', 'Feedback loop', 'Grounded assistant'].map((f) => (
+            <span key={f} className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+              ✓ {f}
+            </span>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
+          Delivered as a deterministic, zero-inference-cost layer — nothing grayed out in the nav is part of this ₹15L build; it's the post-budget roadmap.
+        </p>
+      </section>
 
       {/* trust context banners */}
       {data && <HealthBanner health={data.meta.health} />}
@@ -139,7 +154,7 @@ export function PicksView() {
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-8 text-center">
           <AlertTriangle className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            No picks right now — run a scan cycle or relax your filters. Stale and suppressed leads never surface here.
+            No picks right now — the candidates were suppressed as stale or below your profit bar. Re-rank now, or ask the assistant to show live deals.
           </p>
         </div>
       )}

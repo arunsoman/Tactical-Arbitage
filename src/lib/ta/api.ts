@@ -101,11 +101,22 @@ export interface PicksResponseDTO {
 }
 
 export interface NlSearchResponseDTO {
-  parse: { chips: NlChip[]; unmatched: string[]; minConfidence: string | null; recencyHours: number | null };
+  parse: { filters: LeadFilters; sort: string; chips: NlChip[]; unmatched: string[]; minConfidence: string | null; recencyHours: number | null };
   results: PickDTO[];
   total: number;
   tookMs: number;
   calibratedWith: number;
+}
+
+/** Demo assistant (investor-demo feature #6): strictly tool-using, grounded reply. */
+export interface AssistantResponseDTO {
+  reply: string; // grounded text (cites the data behind every claim)
+  items: PickDTO[]; // matched products rendered as cards under the reply
+  parse: NlSearchResponseDTO['parse']; // full merged parse for refinement memory
+  mode: 'search' | 'verdict' | 'why' | 'stats' | 'capabilities' | 'fallback';
+  suggestions: string[];
+  tookMs: number;
+  groundedWith: { totalCandidates: number; outcomeCount: number };
 }
 
 export interface NotificationDTO {
@@ -476,6 +487,9 @@ export const api = {
 
   nlSearch: (q: string, prev?: unknown) =>
     fetch('/api/nl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q, prev }) }).then((r) => handle<NlSearchResponseDTO>(r)),
+
+  assistant: (body: { messages: { role: 'user' | 'assistant'; content: string }[]; prev?: unknown; contextLeadId?: string | null }) =>
+    fetch('/api/assistant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => handle<AssistantResponseDTO>(r)),
 
   health: () => fetch('/api/health').then((r) => handle<AccountHealthDTO>(r)),
 

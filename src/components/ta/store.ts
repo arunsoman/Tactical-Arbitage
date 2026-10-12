@@ -10,6 +10,7 @@ import type { BootstrapDTO, SettingsDTO } from '@/lib/ta/api';
 export type View =
   | 'picks' // AI Picks — default home (§10)
   | 'search' // natural-language deal search (US-5)
+  | 'assistant' // conversational demo assistant (tool-using, retrieval-grounded)
   | 'dashboard'
   | 'deals'
   | 'scans'
@@ -23,6 +24,22 @@ export type View =
   | 'ops' // Ops & Platform Administration (PRD TA-PRD-OPS-1.0)
   | 'care' // Care Console — agent queue + Ticket 360 (PRD TA-PRD-CARE-1.0)
   | 'support'; // Help & Support — customer face of the care portal
+
+/**
+ * Investor-demo scope: ONLY this AI feature set is live (built to a fixed budget):
+ *   1. Evidence-linked AI ranking + reasoning ("why this rank?")
+ *   2. Natural-language deal search (typed + voice, refinement memory)
+ *   3. Buy-or-Wait opportunity verdict (dual-sided reasons + fair-price meter)
+ *   4. Calibrated confidence scores with explanations
+ *   5. Lightweight outcome / feedback loop (bought / not interested / bad match)
+ *   6. Grounded demo assistant (retrieval-based, no open-ended generation)
+ * Everything else renders grayed out across the shell.
+ */
+export const ENABLED_VIEWS: readonly View[] = ['picks', 'search', 'assistant'];
+
+export function isViewEnabled(v: View): boolean {
+  return (ENABLED_VIEWS as readonly string[]).includes(v);
+}
 
 /** A saved scan whose results are being browsed in Deal Finder. */
 export interface ActiveScan {
@@ -72,6 +89,7 @@ interface TAState {
 
 export const useTAStore = create<TAState>((set) => ({
   view: 'picks',
+  // any view can become active — non-scope views render the locked (roadmap) screen
   setView: (v) => set({ view: v }),
 
   bootstrap: null,

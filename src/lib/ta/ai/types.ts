@@ -1,8 +1,10 @@
 // AI-First v2.2 — shared AI layer types (picks, reasons, confidence, health, NL)
 
 import type { LeadFilters, RiskFlag } from '../types';
+import type { OpportunityVerdict } from './verdict';
 
 export type ConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW';
+export type { OpportunityVerdict } from './verdict';
 
 export type PersonalizationStrength = 'NONE' | 'WEAK' | 'STRONG';
 
@@ -30,6 +32,8 @@ export interface PickDTO {
   reason: string; // one-line evidence-linked reason (always visible, US-1)
   factors: ReasonFactor[]; // full evidence chain (progressive disclosure, US-3)
   personalization: PersonalizationStrength;
+  /** Buy-or-wait verdict (opportunity verdict) — optional, computed with the reason pass */
+  verdict?: OpportunityVerdict;
   lead: {
     id: string;
     asin: string;

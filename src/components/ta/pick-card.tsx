@@ -7,6 +7,7 @@
 import { memo } from 'react';
 import type { PickDTO } from '@/lib/ta/ai/types';
 import { AiScoreRing, ConfidenceBadge, FreshnessDot } from './ai-bits';
+import { VerdictPill } from './opportunity-verdict';
 import { ProductImage } from './product-image';
 import { fmtMoney } from '@/lib/ta/profit';
 import { cn } from '@/lib/utils';
@@ -71,7 +72,9 @@ export const PickCard = memo(function PickCard({ pick, onOpen, onSave, saved }: 
           </p>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {pick.verdict && <VerdictPill verdict={pick.verdict.verdict} confidence={pick.verdict.confidence} />}
             <ConfidenceBadge confidence={confidence} />
+            <FreshnessDot ageH={lead.priceAgeH} fresh={lead.fresh} />
             <FreshnessDot ageH={lead.priceAgeH} fresh={lead.fresh} />
             {flags.map((f) => (
               <Badge key={f} variant="outline" className="border-red-500/40 px-1.5 py-0 text-[10px] text-red-600 dark:text-red-400">

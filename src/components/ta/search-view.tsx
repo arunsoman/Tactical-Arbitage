@@ -174,7 +174,7 @@ export function SearchView() {
             {data.results.map((r) => (
               <PickCard key={r.leadId} pick={r} onOpen={setSelected} onSave={async (p) => {
                 await api.saveToPipeline(p.leadId);
-                toast({ title: 'Saved to pipeline' });
+                toast({ title: 'Saved to your list' });
               }} />
             ))}
             {data.results.length === 0 && (

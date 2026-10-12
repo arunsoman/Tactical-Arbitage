@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/db';
 
-export type LatencyOp = 'RANK' | 'REASON' | 'NL';
+export type LatencyOp = 'RANK' | 'REASON' | 'NL' | 'ASSIST';
 
 const KEEP_PER_OP = 400; // rolling window for p95 computation
 

@@ -1,21 +1,25 @@
 'use client';
 
-// Portal root (TA-PRD-SHOP-1.0 §5.1): the default landing surface is the
-// Arbitrage suite; /?portal=shop renders the BuyWise consumer portal from the
-// same route so deep links stay shareable in the single-route deployment.
-// useSearchParams + Suspense keeps SSR and the first client render identical.
+// Portal root (TA-PRD-SHOP-1.0 §5.1) — narrowed to the investor-demo scope:
+// the funded AI feature build lives in the Arbitrage suite. The BuyWise / Ops /
+// Care portals and every deep link to them are grayed out; any ?portal / ?view
+// param lands in the Arbitrage suite with the URL normalized.
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Radar } from 'lucide-react';
 
 const TAApp = dynamic(() => import('@/components/ta/ta-app').then((m) => m.TAApp));
-const ShopApp = dynamic(() => import('@/components/shop/shop-app').then((m) => m.ShopApp));
 
 function PortalSwitch() {
-  const portal = useSearchParams().get('portal');
-  if (portal === 'shop') return <ShopApp />;
+  const portal = useSearchParams().get('portal') ?? 'ta';
+  const live = portal === 'ta';
+  // Dead portal links (shop / ops / care) normalize to the root — the surface
+  // itself is grayed out of this build.
+  useEffect(() => {
+    if (!live) window.history.replaceState({}, '', '/');
+  }, [live]);
   return <TAApp />;
 }
 

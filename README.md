@@ -1,5 +1,29 @@
 # Tactical Arbitrage (TA) — AI-First, Mobile-First OA Sourcing Platform
 
+> **Investor-demo scope (current build):** the app is narrowed to the funded AI
+> feature set — built as a deterministic, zero-inference-cost layer:
+>
+> 1. **Evidence-linked AI ranking + reasoning** — ranked picks, one-line reason
+>    always visible, "Why this pick" expands into the full evidence chain
+> 2. **Natural-language deal search** — typed or spoken, parsed chips shown
+>    honestly (incl. anything not understood), context-carrying refinements
+> 3. **Buy-or-Wait opportunity verdict** — BUY NOW / WAIT / AVOID with a
+>    deterministic dual-sided ledger + fair-price meter (90-day percentile)
+> 4. **Calibrated confidence** — HIGH/MEDIUM/LOW bands with justification,
+>    outcome-calibrated (Laplace-smoothed, global-prior cold start)
+> 5. **Lightweight feedback loop** — one-tap Bought / Not interested / Bad match →
+>    imputed outcome / pattern suppression / match-review flag
+> 6. **Grounded demo assistant** — chat that answers strictly from the deal store
+>    (retrieval-based; no open-ended generation; resolves "it/this" across turns)
+>
+> Every other surface (Dashboard, Deal Finder, Saved Scans, Pipeline, Alerts,
+> Retailers, Team, AI Status, Billing, Settings, Ops, Care, Support, BuyWise) is
+> **grayed out with lock icons** and opens a dedicated roadmap screen stating it
+> is not covered in this build. The scoping lives in
+> `src/components/ta/store.ts` (`ENABLED_VIEWS`) and
+> `src/components/ta/ta-app.tsx`; the roadmap screen is
+> `src/components/ta/locked-view.tsx`.
+
 Web-based product-sourcing platform for **online arbitrage (OA) sellers**, built from
 **PRD v2.2 (AI-First, Mobile-First)** — which supersedes the earlier engineering-review
 draft. It implements the core value loop:

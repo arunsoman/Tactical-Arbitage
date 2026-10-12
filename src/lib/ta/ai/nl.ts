@@ -224,14 +224,28 @@ export function parseNlQuery(raw: string, knownRetailers: { id: string; name: st
   return { filters, sort, minConfidence, recencyHours, chips, unmatched };
 }
 
-/** Merge a refinement into the previous parse so context is never lost (US-5 AC). */
+/** Merge a refinement into the previous parse so context is never lost (US-5 AC).
+ *  A value the new query doesn't state explicitly must INHERIT the base value —
+ *  the fresh parse's null-initialized fields never erase previous constraints. */
 export function mergeNl(base: NlParseResult, next: NlParseResult): NlParseResult {
+  const pickNum = (b: number | null, n: number | null): number | null => (n != null ? n : b);
   const filters: LeadFilters = {
-    ...base.filters,
     ...next.filters,
-    categories: Array.from(new Set([...base.filters.categories, ...next.filters.categories])),
+    minPrice: pickNum(base.filters.minPrice, next.filters.minPrice),
+    maxPrice: pickNum(base.filters.maxPrice, next.filters.maxPrice),
+    minProfit: pickNum(base.filters.minProfit, next.filters.minProfit),
+    minRoi: pickNum(base.filters.minRoi, next.filters.minRoi),
+    maxRoi: pickNum(base.filters.maxRoi, next.filters.maxRoi),
+    minBsr: pickNum(base.filters.minBsr, next.filters.minBsr),
+    maxBsr: pickNum(base.filters.maxBsr, next.filters.maxBsr),
+    minFbaOffers: pickNum(base.filters.minFbaOffers, next.filters.minFbaOffers),
+    maxFbaOffers: pickNum(base.filters.maxFbaOffers, next.filters.maxFbaOffers),
+    minDiscount: pickNum(base.filters.minDiscount, next.filters.minDiscount),
+    amazonOnListing: next.filters.amazonOnListing !== 'any' ? next.filters.amazonOnListing : base.filters.amazonOnListing,
     retailers: next.filters.retailers.length > 0 ? next.filters.retailers : base.filters.retailers,
+    categories: Array.from(new Set([...base.filters.categories, ...next.filters.categories])),
     excludeFlags: Array.from(new Set([...base.filters.excludeFlags, ...next.filters.excludeFlags])),
+    requireFresh: next.filters.requireFresh || base.filters.requireFresh,
     search: next.filters.search || base.filters.search,
   };
   return {
